@@ -1,0 +1,161 @@
+name: Publish to NPM
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build packages
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        with:
+          name: build-artifacts
+          path: |
+            packages/*/dist
+            packages/*/package.json
+          retention-days: 1
+
+  test:
+    name: Test (Node ${{ matrix.node }} / ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['18.x', '20.x', '22.x']
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Setup Node.js ${{ matrix.node }}
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build packages
+        run: npm run build
+
+      - name: Run tests
+        run: npm test
+
+  pack-and-smoke-test:
+    name: Pack and Smoke Test
+    needs: [build, test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 # v4.1.4
+        with:
+          name: build-artifacts
+          path: packages
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Pack @mctx-ai/mcp-server
+        working-directory: packages/server
+        run: npm pack
+
+      - name: Pack @mctx-ai/mcp-dev
+        working-directory: packages/dev
+        run: npm pack
+
+      - name: Smoke test @mctx-ai/mcp-server
+        run: |
+          mkdir -p /tmp/smoke-test-server
+          cd /tmp/smoke-test-server
+          npm init -y
+          npm install $GITHUB_WORKSPACE/packages/server/mctx-ai-mcp-server-*.tgz
+          node -e "import('@mctx-ai/mcp-server').then(() => console.log('✓ @mctx-ai/mcp-server import successful')).catch(e => { console.error('✗ Import failed:', e); process.exit(1); })"
+
+      - name: Smoke test @mctx-ai/mcp-dev
+        run: |
+          mkdir -p /tmp/smoke-test-dev
+          cd /tmp/smoke-test-dev
+          npm init -y
+          npm install $GITHUB_WORKSPACE/packages/server/mctx-ai-mcp-server-*.tgz
+          npm install $GITHUB_WORKSPACE/packages/dev/mctx-ai-mcp-dev-*.tgz
+          node -e "import('@mctx-ai/mcp-dev').then(() => console.log('✓ @mctx-ai/mcp-dev import successful')).catch(e => { console.error('✗ Import failed:', e); process.exit(1); })"
+
+      - name: Upload packed packages
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        with:
+          name: npm-packages
+          path: packages/*/mctx-ai-*.tgz
+          retention-days: 1
+
+  publish:
+    name: Publish to NPM
+    needs: [pack-and-smoke-test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 # v4.1.4
+        with:
+          name: build-artifacts
+          path: packages
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Publish @mctx-ai/mcp-server
+        working-directory: packages/server
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @mctx-ai/mcp-dev
+        working-directory: packages/dev
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
