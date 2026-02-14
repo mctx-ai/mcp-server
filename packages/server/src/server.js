@@ -22,6 +22,21 @@ import {
 } from './security.js';
 
 /**
+ * HTTP Security Headers
+ *
+ * Defense in depth: Multiple security headers protect against common web attacks
+ * - X-Content-Type-Options: Prevents MIME type sniffing
+ * - Content-Security-Policy: Restricts resource loading (none for JSON API)
+ * - X-Frame-Options: Prevents clickjacking
+ */
+const SECURITY_HEADERS = {
+  'Content-Type': 'application/json',
+  'X-Content-Type-Options': 'nosniff',
+  'Content-Security-Policy': "default-src 'none'",
+  'X-Frame-Options': 'DENY',
+};
+
+/**
  * Safe JSON serialization handling circular refs, BigInt, Date
  * @param {*} value - Value to serialize
  * @returns {string} JSON string
@@ -720,7 +735,7 @@ export function createServer() {
         }),
         {
           status: 405,
-          headers: { 'Content-Type': 'application/json' },
+          headers: SECURITY_HEADERS,
         }
       );
     }
@@ -750,7 +765,7 @@ export function createServer() {
         }),
         {
           status: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: SECURITY_HEADERS,
         }
       );
     }
@@ -768,7 +783,7 @@ export function createServer() {
         }),
         {
           status: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: SECURITY_HEADERS,
         }
       );
     }
@@ -807,7 +822,7 @@ export function createServer() {
         JSON.stringify(responseBody),
         {
           status: 200,
-          headers: { 'Content-Type': 'application/json' },
+          headers: SECURITY_HEADERS,
         }
       );
 
@@ -830,7 +845,7 @@ export function createServer() {
         }),
         {
           status: 200, // JSON-RPC errors use 200 status with error object
-          headers: { 'Content-Type': 'application/json' },
+          headers: SECURITY_HEADERS,
         }
       );
     }

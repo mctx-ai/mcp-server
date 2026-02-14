@@ -11,6 +11,7 @@
  */
 
 // Secret patterns to detect and redact
+// IMPORTANT: Order matters - more specific patterns must come before generic patterns
 const SECRET_PATTERNS = [
   // AWS Access Keys (AKIA + 16 alphanumeric chars)
   { regex: /AKIA[0-9A-Z]{16}/g, label: 'REDACTED_AWS_KEY' },
@@ -24,8 +25,29 @@ const SECRET_PATTERNS = [
   // Bearer tokens
   { regex: /Bearer\s+[a-zA-Z0-9_\-\.]+/gi, label: 'Bearer [REDACTED]' },
 
+  // GitHub tokens (personal access tokens, OAuth, app tokens, refresh tokens)
+  // MUST come before generic API key pattern (which would match "token:")
+  // GitHub tokens: gh[pors]_ prefix + 33-40 alphanumeric chars
+  // Note: gh[pors] matches ghp, gho, ghr, ghs
+  { regex: /gh[pors]_[a-zA-Z0-9]{33,40}/g, label: 'REDACTED_GITHUB_TOKEN' },
+
+  // Slack tokens (format: xoxb-numbers-alphanumeric or similar hyphen-separated patterns)
+  // MUST come before generic API key pattern (which would match "token:")
+  { regex: /xox[bpas]-[a-zA-Z0-9]+-[a-zA-Z0-9-]+/g, label: 'REDACTED_SLACK_TOKEN' },
+
+  // Private keys (RSA, EC, DSA)
+  { regex: /-----BEGIN (?:RSA |EC |DSA )?PRIVATE KEY-----[\s\S]*?-----END (?:RSA |EC |DSA )?PRIVATE KEY-----/g, label: 'REDACTED_PRIVATE_KEY' },
+
+  // GCP API keys (AIzaSy prefix + variable length alphanumeric/special chars)
+  { regex: /AIzaSy[0-9A-Za-z\-_]{21,}/g, label: 'REDACTED_GCP_KEY' },
+
+  // Azure connection strings
+  { regex: /AccountKey=[a-zA-Z0-9+\/=]{40,}/g, label: 'REDACTED_AZURE_KEY' },
+
   // Generic API key patterns (key=, token=, secret=, password= followed by value)
-  { regex: /(?:api[_-]?key|token|secret|password)\s*[=:]\s*['"]?([a-zA-Z0-9_\-\.]{16,})['"]?/gi, label: (match) => match.replace(/(['"]?)[a-zA-Z0-9_\-\.]{16,}(['"]?)/, '$1[REDACTED]$2') },
+  // ReDoS mitigation: bounded whitespace quantifiers (max 10 instead of unbounded \s*)
+  // MUST come LAST to avoid matching more specific token patterns above
+  { regex: /(?:api[_-]?key|token|secret|password)\s{0,10}[=:]\s{0,10}['"]?([a-zA-Z0-9_\-\.]{16,})['"]?/gi, label: (match) => match.replace(/(['"]?)[a-zA-Z0-9_\-\.]{16,}(['"]?)/, '$1[REDACTED]$2') },
 ];
 
 // Dangerous URI schemes that enable injection attacks
@@ -173,6 +195,10 @@ export function validateUriScheme(uri, allowedSchemes = ['http', 'https']) {
  *
  * Security: Prevents path traversal attacks
  * - Detects ../ sequences that escape intended directory
+ * - Handles double/triple encoding (%252e%252e%252f)
+ * - Detects null byte injection (%00 and literal \0)
+ * - Handles mixed encoding (%2e./, .%2e/)
+ * - Checks Unicode variants (\u002e\u002e/)
  * - Normalizes path for consistent validation
  *
  * @param {string} uri - URI/path to canonicalize
@@ -184,19 +210,44 @@ export function canonicalizePath(uri) {
     throw new Error('Invalid URI: must be a non-empty string');
   }
 
-  // Detect path traversal attempts
-  if (uri.includes('../') || uri.includes('..\\')) {
+  // Decode URI repeatedly (max 3 iterations) to catch double/triple encoding
+  let decoded = uri;
+  for (let i = 0; i < 3; i++) {
+    try {
+      const nextDecoded = decodeURIComponent(decoded);
+      if (nextDecoded === decoded) break; // No more decoding needed
+      decoded = nextDecoded;
+    } catch {
+      // Invalid URI encoding, continue with current value
+      break;
+    }
+  }
+
+  // Detect null byte injection (both encoded and literal)
+  if (decoded.includes('%00') || decoded.includes('\0')) {
+    throw new Error('Path traversal detected: null byte injection is not allowed');
+  }
+
+  // Detect Unicode variants of dots and slashes
+  // \u002e = '.', \u002f = '/'
+  if (decoded.includes('\u002e\u002e\u002f') || decoded.includes('\u002e\u002e/') || decoded.includes('..\u002f')) {
+    throw new Error('Path traversal detected: Unicode-encoded ../ sequences are not allowed');
+  }
+
+  // Check fully decoded string for literal path traversal attempts
+  if (decoded.includes('../') || decoded.includes('..\\')) {
     throw new Error('Path traversal detected: ../ sequences are not allowed');
   }
 
-  // Detect encoded path traversal (URL encoded, case-insensitive)
-  const lowerUri = uri.toLowerCase();
-  if (lowerUri.includes('%2e%2e%2f') || lowerUri.includes('%2e%2e/') || lowerUri.includes('..%2f')) {
+  // Check for mixed encoding in decoded string (case-insensitive)
+  const lowerDecoded = decoded.toLowerCase();
+  if (lowerDecoded.includes('%2e%2e%2f') || lowerDecoded.includes('%2e%2e/') || lowerDecoded.includes('..%2f') ||
+      lowerDecoded.includes('%2e.') || lowerDecoded.includes('.%2e')) {
     throw new Error('Path traversal detected: encoded ../ sequences are not allowed');
   }
 
   // Normalize path separators
-  let normalized = uri.replace(/\\/g, '/');
+  let normalized = decoded.replace(/\\/g, '/');
 
   // Remove duplicate slashes
   normalized = normalized.replace(/\/+/g, '/');

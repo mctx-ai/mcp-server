@@ -409,6 +409,82 @@ describe('security integration', () => {
     expect(data.error).toBeDefined();
     expect(data.error.message).toContain('Path traversal detected');
   });
+
+  it('includes HTTP security headers in all responses', async () => {
+    const app = createServer();
+
+    const tool = () => 'success';
+    tool.input = {};
+    app.tool('test', tool);
+
+    const request = createRequest({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'tools/call',
+      params: {
+        name: 'test',
+        arguments: {},
+      },
+    });
+
+    const response = await app.fetch(request);
+
+    // Verify all security headers are present
+    expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
+    expect(response.headers.get('Content-Security-Policy')).toBe("default-src 'none'");
+    expect(response.headers.get('X-Frame-Options')).toBe('DENY');
+    expect(response.headers.get('Content-Type')).toBe('application/json');
+  });
+
+  it('includes security headers in error responses', async () => {
+    const app = createServer();
+
+    const request = createRequest({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'nonexistent/method',
+    });
+
+    const response = await app.fetch(request);
+
+    // Verify security headers in error responses
+    expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
+    expect(response.headers.get('Content-Security-Policy')).toBe("default-src 'none'");
+    expect(response.headers.get('X-Frame-Options')).toBe('DENY');
+  });
+
+  it('includes security headers in parse error responses', async () => {
+    const app = createServer();
+
+    const request = new Request('http://localhost', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: 'invalid json',
+    });
+
+    const response = await app.fetch(request);
+
+    // Verify security headers in parse error responses
+    expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
+    expect(response.headers.get('Content-Security-Policy')).toBe("default-src 'none'");
+    expect(response.headers.get('X-Frame-Options')).toBe('DENY');
+  });
+
+  it('includes security headers in method not allowed responses', async () => {
+    const app = createServer();
+
+    const request = new Request('http://localhost', {
+      method: 'GET',
+    });
+
+    const response = await app.fetch(request);
+
+    // Verify security headers in 405 responses
+    expect(response.status).toBe(405);
+    expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
+    expect(response.headers.get('Content-Security-Policy')).toBe("default-src 'none'");
+    expect(response.headers.get('X-Frame-Options')).toBe('DENY');
+  });
 });
 
 describe('method chaining', () => {

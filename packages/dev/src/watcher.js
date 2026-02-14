@@ -1,18 +1,17 @@
 /**
  * @mctx-ai/mcp-dev File Watcher
  *
- * Watches entry file and its directory for changes and triggers hot reload.
+ * Watches project files for changes and triggers hot reload.
  * Uses Node's built-in fs.watch with debouncing to avoid rapid reloads.
  *
- * LIMITATION (Fix #7): Currently only watches the entry file's directory.
- * Changes to imported dependencies or files in parent/child directories
- * will NOT trigger a reload. For full dependency watching, consider using
- * a more sophisticated tool like chokidar or manually watching src/, lib/
- * directories if they exist.
+ * Watches:
+ * - Project root (if package.json found)
+ * - Common directories: src/, lib/, utils/ (recursively)
+ * - Falls back to entry file directory if no package.json found
  */
 
-import { watch as fsWatch } from 'fs';
-import { dirname, basename } from 'path';
+import { watch as fsWatch, existsSync } from 'fs';
+import { dirname, basename, join } from 'path';
 
 // ANSI color codes
 const colors = {
@@ -37,49 +36,102 @@ function log(message) {
 }
 
 /**
- * Watch file and directory for changes
+ * Find project root by walking up to find package.json
+ */
+function findProjectRoot(startPath) {
+  let currentPath = startPath;
+
+  // Walk up until we find package.json or reach root
+  while (currentPath !== dirname(currentPath)) {
+    const packageJsonPath = join(currentPath, 'package.json');
+    if (existsSync(packageJsonPath)) {
+      return currentPath;
+    }
+    currentPath = dirname(currentPath);
+  }
+
+  return null;
+}
+
+/**
+ * Get directories to watch
+ */
+function getWatchDirs(entryFilePath) {
+  const entryDir = dirname(entryFilePath);
+  const projectRoot = findProjectRoot(entryDir);
+
+  if (!projectRoot) {
+    // No package.json found, fall back to entry file directory
+    return [{ path: entryDir, recursive: false }];
+  }
+
+  const watchDirs = [];
+
+  // Watch common directories recursively if they exist
+  const commonDirs = ['src', 'lib', 'utils'];
+  for (const dir of commonDirs) {
+    const dirPath = join(projectRoot, dir);
+    if (existsSync(dirPath)) {
+      watchDirs.push({ path: dirPath, recursive: true });
+    }
+  }
+
+  // If no common dirs found, watch project root non-recursively
+  if (watchDirs.length === 0) {
+    watchDirs.push({ path: projectRoot, recursive: false });
+  }
+
+  return watchDirs;
+}
+
+/**
+ * Watch file and directories for changes
  *
  * @param {string} filePath - Absolute path to file to watch
  * @param {Function} onChange - Callback when file changes
+ * @returns {Object} Object with watchers array and watchedDirs info
  *
- * Note: Only watches the entry file's directory. Changes to imported
- * dependencies or other directories will NOT trigger reload.
+ * Watches project root and common directories (src/, lib/, utils/) recursively.
+ * Falls back to entry file directory if no package.json found.
  */
 export function watch(filePath, onChange) {
-  const dir = dirname(filePath);
-  const filename = basename(filePath);
-
   let debounceTimer = null;
   const DEBOUNCE_MS = 100;
 
-  // Watch the directory (more reliable than watching individual files)
-  // Fix #7: This only watches the entry file's directory, not dependencies
-  const watcher = fsWatch(dir, { recursive: false }, (eventType, changedFile) => {
-    // Filter for changes to our target file
-    if (changedFile !== filename) {
-      return;
-    }
+  const watchDirs = getWatchDirs(filePath);
+  const watchers = [];
 
-    // Debounce rapid changes (editors often write multiple times)
-    if (debounceTimer) {
-      clearTimeout(debounceTimer);
-    }
+  // Watch each directory
+  for (const { path, recursive } of watchDirs) {
+    const watcher = fsWatch(path, { recursive }, (eventType, changedFile) => {
+      // Only watch .js files
+      if (changedFile && !changedFile.endsWith('.js')) {
+        return;
+      }
 
-    debounceTimer = setTimeout(() => {
-      log(`${colors.green}Reloaded:${colors.reset} ${colors.dim}${filename}${colors.reset}`);
-      onChange();
-    }, DEBOUNCE_MS);
-  });
+      // Debounce rapid changes (editors often write multiple times)
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
 
-  // Handle watcher errors
-  watcher.on('error', (error) => {
-    console.error(`Watcher error: ${error.message}`);
-  });
+      debounceTimer = setTimeout(() => {
+        log(`${colors.green}Reloaded:${colors.reset} ${colors.dim}${changedFile || 'file'}${colors.reset}`);
+        onChange();
+      }, DEBOUNCE_MS);
+    });
+
+    // Handle watcher errors
+    watcher.on('error', (error) => {
+      console.error(`Watcher error: ${error.message}`);
+    });
+
+    watchers.push(watcher);
+  }
 
   // Clean up on process exit
   process.on('exit', () => {
-    watcher.close();
+    watchers.forEach(w => w.close());
   });
 
-  return watcher;
+  return { watchers, watchedDirs: watchDirs };
 }

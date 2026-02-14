@@ -147,6 +147,64 @@ describe('user.attach()', () => {
     expect(result.messages[1].content.mimeType).toBe('image/gif');
     expect(result.messages[2].content.mimeType).toBe('image/webp');
   });
+
+  it('validates MIME type format - valid types', () => {
+    expect(() => {
+      conversation(({ user }) => [
+        user.attach('data', 'image/png'),
+      ]);
+    }).not.toThrow();
+
+    expect(() => {
+      conversation(({ user }) => [
+        user.attach('data', 'application/json'),
+      ]);
+    }).not.toThrow();
+
+    expect(() => {
+      conversation(({ user }) => [
+        user.attach('data', 'text/plain'),
+      ]);
+    }).not.toThrow();
+
+    expect(() => {
+      conversation(({ user }) => [
+        user.attach('data', 'application/vnd.api+json'),
+      ]);
+    }).not.toThrow();
+  });
+
+  it('validates MIME type format - invalid types', () => {
+    expect(() => {
+      conversation(({ user }) => [
+        user.attach('data', 'notarealtype'),
+      ]);
+    }).toThrow(/Invalid MIME type.*Expected format: type\/subtype/);
+
+    expect(() => {
+      conversation(({ user }) => [
+        user.attach('data', 'just/a/test/path'),
+      ]);
+    }).toThrow(/Invalid MIME type.*Expected format: type\/subtype/);
+
+    expect(() => {
+      conversation(({ user }) => [
+        user.attach('data', ''),
+      ]);
+    }).toThrow(/Invalid MIME type.*Expected format: type\/subtype/);
+
+    expect(() => {
+      conversation(({ user }) => [
+        user.attach('data', '/missingtype'),
+      ]);
+    }).toThrow(/Invalid MIME type.*Expected format: type\/subtype/);
+
+    expect(() => {
+      conversation(({ user }) => [
+        user.attach('data', 'missingsubtype/'),
+      ]);
+    }).toThrow(/Invalid MIME type.*Expected format: type\/subtype/);
+  });
 });
 
 describe('user.embed()', () => {

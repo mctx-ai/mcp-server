@@ -6,7 +6,7 @@
 
 import { describe, it, expect } from 'vitest';
 import * as mcpServer from '../src/index.js';
-import { createServer, T, conversation, createProgress, log } from '../src/index.js';
+import { createServer, T, conversation, createProgress, PROGRESS_DEFAULTS, log } from '../src/index.js';
 
 describe('package exports', () => {
   it('exports createServer', () => {
@@ -37,6 +37,12 @@ describe('package exports', () => {
   it('exports createProgress', () => {
     expect(mcpServer.createProgress).toBeDefined();
     expect(typeof mcpServer.createProgress).toBe('function');
+  });
+
+  it('exports PROGRESS_DEFAULTS', () => {
+    expect(PROGRESS_DEFAULTS).toBeDefined();
+    expect(PROGRESS_DEFAULTS.maxExecutionTime).toBe(60000);
+    expect(PROGRESS_DEFAULTS.maxYields).toBe(10000);
   });
 
   it('exports log', () => {

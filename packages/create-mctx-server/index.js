@@ -1,6 +1,10 @@
 #!/usr/bin/env node
-import { mkdirSync, writeFileSync, existsSync } from 'fs';
+import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'fs';
 import { join } from 'path';
+
+// Read version from own package.json
+const selfPkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
+const version = selfPkg.version;
 
 const projectName = process.argv[2];
 
@@ -27,10 +31,10 @@ const packageJson = {
     build: "node --experimental-sea-config sea-config.json || echo 'Build step placeholder'",
   },
   dependencies: {
-    '@mctx-ai/mcp-server': '^0.1.0',
+    '@mctx-ai/mcp-server': `^${version}`,
   },
   devDependencies: {
-    '@mctx-ai/mcp-dev': '^0.1.0',
+    '@mctx-ai/mcp-dev': `^${version}`,
   },
 };
 
@@ -78,6 +82,46 @@ dist/
 `;
 
 writeFileSync(join(projectName, '.gitignore'), gitignore);
+
+// Generate README.md
+const readme = `# ${projectName}
+
+An MCP server built with [@mctx-ai/mcp-server](https://github.com/mctx-ai/mcp-server).
+
+## Development
+
+\`\`\`bash
+npm install
+npm run dev
+\`\`\`
+
+## Add a Tool
+
+\`\`\`javascript
+const myTool = ({ input }) => {
+  return \`Result: \${input}\`;
+};
+myTool.description = 'What this tool does';
+myTool.input = {
+  input: T.string({ required: true, description: 'Input description' }),
+};
+app.tool('my-tool', myTool);
+\`\`\`
+
+## Deploy
+
+1. Push to GitHub
+2. Connect your repo at [mctx.ai](https://mctx.ai)
+3. Deploy — mctx reads \`mctx.json\` and runs your server
+
+## Learn More
+
+- [Framework Docs](https://docs.mctx.ai/docs/building-mcp-servers/framework-getting-started)
+- [API Reference](https://docs.mctx.ai/docs/building-mcp-servers/framework-api-reference)
+- [MCP Specification](https://modelcontextprotocol.io)
+`;
+
+writeFileSync(join(projectName, 'README.md'), readme);
 
 // Success message
 console.log(`✓ Created ${projectName}

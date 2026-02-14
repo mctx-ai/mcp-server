@@ -18,6 +18,15 @@
       "bump-patch-for-minor-pre-major": false,
       "pull-request-title-pattern": "chore: release ${component} ${version}",
       "extra-files": []
+    },
+    "packages/create-mctx-server": {
+      "package-name": "create-mctx-server",
+      "changelog-path": "CHANGELOG.md",
+      "release-type": "node",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": false,
+      "pull-request-title-pattern": "chore: release ${component} ${version}",
+      "extra-files": []
     }
   },
   "release-type": "node",

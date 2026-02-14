@@ -172,6 +172,140 @@ describe('sanitizeError() - API key redaction', () => {
   });
 });
 
+describe('sanitizeError() - GitHub token redaction', () => {
+  it('redacts GitHub personal access tokens (ghp_)', () => {
+    // GitHub tokens are 36 chars after prefix: ghp_ + 36 chars
+    const token = 'ghp_1234567890abcdefghij1234567890abcdef';
+    const error = new Error(`Auth failed with ${token}`);
+    const sanitized = sanitizeError(error, true);
+
+    expect(sanitized).toContain('[REDACTED_GITHUB_TOKEN]');
+    expect(sanitized).not.toContain(token);
+  });
+
+  it('redacts GitHub OAuth tokens (gho_)', () => {
+    const token = 'gho_abcdefghijklmnopqrstuvwxyz0123456789';
+    const error = new Error(`Token: ${token}`);
+    const sanitized = sanitizeError(error, true);
+
+    expect(sanitized).toContain('[REDACTED_GITHUB_TOKEN]');
+    expect(sanitized).not.toContain(token);
+  });
+
+  it('redacts GitHub server tokens (ghs_)', () => {
+    const token = 'ghs_XyZ1234567890AbCdEfGhIjKlMnOpQrStUv';
+    const error = new Error(`Server token: ${token}`);
+    const sanitized = sanitizeError(error, true);
+
+    expect(sanitized).toContain('[REDACTED_GITHUB_TOKEN]');
+    expect(sanitized).not.toContain(token);
+  });
+
+  it('redacts GitHub refresh tokens (ghr_)', () => {
+    const token = 'ghr_0987654321ZyXwVuTsRqPoNmLkJiHgFeD';
+    const error = new Error(`Refresh: ${token}`);
+    const sanitized = sanitizeError(error, true);
+
+    expect(sanitized).toContain('[REDACTED_GITHUB_TOKEN]');
+    expect(sanitized).not.toContain(token);
+  });
+});
+
+describe('sanitizeError() - Slack token redaction', () => {
+  it('redacts Slack bot tokens (xoxb-)', () => {
+    const token = 'xoxb-FAKEFAKE-TESTTOKEN'; // pragma: fake test token
+    const error = new Error(`Slack error: ${token}`);
+    const sanitized = sanitizeError(error, true);
+
+    expect(sanitized).toContain('[REDACTED_SLACK_TOKEN]');
+    expect(sanitized).not.toContain(token);
+  });
+
+  it('redacts Slack user tokens (xoxp-)', () => {
+    const token = 'xoxp-FAKEFAKE-TESTTOKEN'; // pragma: fake test token
+    const error = new Error(`Token: ${token}`);
+    const sanitized = sanitizeError(error, true);
+
+    expect(sanitized).toContain('[REDACTED_SLACK_TOKEN]');
+    expect(sanitized).not.toContain(token);
+  });
+
+  it('redacts Slack app tokens (xoxa-)', () => {
+    const error = new Error('App: xoxa-1111111111-2222222222-abcdefg');
+    const sanitized = sanitizeError(error, true);
+
+    expect(sanitized).toContain('[REDACTED_SLACK_TOKEN]');
+    expect(sanitized).not.toContain('xoxa-1111111111-2222222222-abcdefg');
+  });
+});
+
+describe('sanitizeError() - Private key redaction', () => {
+  it('redacts RSA private keys', () => {
+    const key = '-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA...\n-----END RSA PRIVATE KEY-----';
+    const error = new Error(`Key leaked: ${key}`);
+    const sanitized = sanitizeError(error, true);
+
+    expect(sanitized).toContain('[REDACTED_PRIVATE_KEY]');
+    expect(sanitized).not.toContain('BEGIN RSA PRIVATE KEY');
+    expect(sanitized).not.toContain('MIIEpAIBAAKCAQEA');
+  });
+
+  it('redacts EC private keys', () => {
+    const key = '-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEII...\n-----END EC PRIVATE KEY-----';
+    const error = new Error(`Exposed: ${key}`);
+    const sanitized = sanitizeError(error, true);
+
+    expect(sanitized).toContain('[REDACTED_PRIVATE_KEY]');
+    expect(sanitized).not.toContain('BEGIN EC PRIVATE KEY');
+  });
+
+  it('redacts generic private keys', () => {
+    const key = '-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMG...\n-----END PRIVATE KEY-----';
+    const error = new Error(`Leaked: ${key}`);
+    const sanitized = sanitizeError(error, true);
+
+    expect(sanitized).toContain('[REDACTED_PRIVATE_KEY]');
+    expect(sanitized).not.toContain('BEGIN PRIVATE KEY');
+  });
+});
+
+describe('sanitizeError() - GCP API key redaction', () => {
+  it('redacts GCP API keys', () => {
+    const error = new Error('GCP key: AIzaSyDxVxF3c4N-RgZqP8mK9jL2hY1wBtCvXyZ');
+    const sanitized = sanitizeError(error, true);
+
+    expect(sanitized).toContain('[REDACTED_GCP_KEY]');
+    expect(sanitized).not.toContain('AIzaSyDxVxF3c4N-RgZqP8mK9jL2hY1wBtCvXyZ');
+  });
+
+  it('redacts multiple GCP keys', () => {
+    const error = new Error('Keys: AIzaSyABC123def456GHI789jkl and AIzaSyXYZ987wvu654TSR321qpo');
+    const sanitized = sanitizeError(error, true);
+
+    expect(sanitized).toContain('[REDACTED_GCP_KEY]');
+    expect(sanitized).not.toContain('AIzaSyABC123def456GHI789jkl');
+    expect(sanitized).not.toContain('AIzaSyXYZ987wvu654TSR321qpo');
+  });
+});
+
+describe('sanitizeError() - Azure key redaction', () => {
+  it('redacts Azure AccountKey values', () => {
+    const error = new Error('Connection: AccountKey=abcdefghijklmnopqrstuvwxyz1234567890ABCDEFG==');
+    const sanitized = sanitizeError(error, true);
+
+    expect(sanitized).toContain('[REDACTED_AZURE_KEY]');
+    expect(sanitized).not.toContain('abcdefghijklmnopqrstuvwxyz1234567890ABCDEFG==');
+  });
+
+  it('redacts Azure storage connection strings', () => {
+    const error = new Error('Failed: DefaultEndpointsProtocol=https;AccountName=myaccount;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==');
+    const sanitized = sanitizeError(error, true);
+
+    expect(sanitized).toContain('[REDACTED_AZURE_KEY]');
+    expect(sanitized).not.toContain('Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==');
+  });
+});
+
 describe('validateRequestSize()', () => {
   it('passes for requests under limit', () => {
     const body = JSON.stringify({ data: 'test' });
@@ -348,6 +482,37 @@ describe('canonicalizePath()', () => {
 
   it('is case-insensitive for encoded traversal', () => {
     expect(() => canonicalizePath('db://%2E%2E%2Fetc/passwd')).toThrow(/Path traversal detected/);
+  });
+
+  it('detects double-encoded path traversal', () => {
+    // %252e = encoded '%2e'
+    expect(() => canonicalizePath('db://%252e%252e%252fetc/passwd')).toThrow(/Path traversal detected/);
+  });
+
+  it('detects triple-encoded path traversal', () => {
+    // %25252e = double-encoded '%2e'
+    expect(() => canonicalizePath('db://%25252e%25252e%25252fetc/passwd')).toThrow(/Path traversal detected/);
+  });
+
+  it('detects null byte injection (encoded)', () => {
+    expect(() => canonicalizePath('db://file.txt%00.jpg')).toThrow(/null byte injection/);
+  });
+
+  it('detects null byte injection (literal)', () => {
+    expect(() => canonicalizePath('db://file.txt\0.jpg')).toThrow(/null byte injection/);
+  });
+
+  it('detects mixed encoding (%2e./)', () => {
+    expect(() => canonicalizePath('db://%2e./etc/passwd')).toThrow(/Path traversal detected/);
+  });
+
+  it('detects mixed encoding (.%2e/)', () => {
+    expect(() => canonicalizePath('db://.%2e/etc/passwd')).toThrow(/Path traversal detected/);
+  });
+
+  it('detects Unicode-encoded path traversal', () => {
+    // \u002e = '.', \u002f = '/'
+    expect(() => canonicalizePath('db://\u002e\u002e\u002fetc/passwd')).toThrow(/Unicode-encoded ..\/|Path traversal detected/);
   });
 
   it('normalizes path separators', () => {

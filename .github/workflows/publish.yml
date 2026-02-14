@@ -148,14 +148,44 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Dry run (prereleases) - @mctx-ai/mcp-server
+        if: github.event.release.prerelease == true
+        working-directory: packages/server
+        run: npm publish --dry-run
+
       - name: Publish @mctx-ai/mcp-server
         working-directory: packages/server
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: Dry run (prereleases) - @mctx-ai/mcp-dev
+        if: github.event.release.prerelease == true
+        working-directory: packages/dev
+        run: npm publish --dry-run
+
       - name: Publish @mctx-ai/mcp-dev
         working-directory: packages/dev
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  post-publish-check:
+    name: Post-Publish Validation
+    needs: [publish]
+    if: github.event.release.prerelease == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: '20.x'
+
+      - name: Verify packages installable
+        run: |
+          mkdir -p /tmp/verify-install && cd /tmp/verify-install
+          npm init -y
+          echo '{"type":"module"}' > package.json
+          npm install @mctx-ai/mcp-server@latest
+          node -e "import('@mctx-ai/mcp-server').then(m => { console.log('Exports:', Object.keys(m)); process.exit(0); })"

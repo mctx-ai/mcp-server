@@ -239,8 +239,8 @@ export type PromptHandler = {
  * ```
  */
 export type AskFunction = {
-  (prompt: string): Promise<string>;
-  (options: SamplingOptions): Promise<string>;
+  (prompt: string): Promise<string | Record<string, unknown>>;
+  (options: SamplingOptions): Promise<string | Record<string, unknown>>;
 };
 
 /**

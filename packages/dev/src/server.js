@@ -164,6 +164,9 @@ export async function startDevServer(entryUrl, port) {
   let app = null;
   let appModule = null;
 
+  // Check if verbose logging is enabled
+  const isVerbose = process.env.MCTX_VERBOSE === 'true';
+
   // Load the user's app
   async function loadApp() {
     try {
@@ -214,7 +217,7 @@ export async function startDevServer(entryUrl, port) {
 
   // Start file watcher for hot reload
   const entryPath = new URL(entryUrl).pathname;
-  watch(entryPath, async () => {
+  const watcherInfo = watch(entryPath, async () => {
     try {
       await loadApp();
       logFramework('Reload successful', colors.green);
@@ -323,6 +326,12 @@ export async function startDevServer(entryUrl, port) {
       const methodDisplay = formatMethod(rpcRequest);
       log(`${colors.cyan}→${colors.reset} ${methodDisplay}`, colors.dim);
 
+      // Verbose logging: log full request body (skip initialize/initialized)
+      if (isVerbose && rpcRequest.method !== 'initialize' && rpcRequest.method !== 'initialized') {
+        console.log(`${colors.dim}[verbose] Request:${colors.reset}`);
+        console.log(JSON.stringify(rpcRequest, null, 2));
+      }
+
       try {
         // Handle initialize handshake locally
         const initResponse = handleInitialize(rpcRequest);
@@ -377,6 +386,23 @@ export async function startDevServer(entryUrl, port) {
         const statusColor = statusCode >= 200 && statusCode < 300 ? colors.green : colors.red;
         log(`${statusColor}←${colors.reset} ${statusCode} (${elapsed}ms)`, colors.dim);
 
+        // Verbose logging: log full response body (skip initialize/initialized)
+        if (isVerbose && rpcRequest.method !== 'initialize' && rpcRequest.method !== 'initialized') {
+          console.log(`${colors.dim}[verbose] Response:${colors.reset}`);
+          try {
+            const responseJson = JSON.parse(responseText);
+            console.log(JSON.stringify(responseJson, null, 2));
+          } catch {
+            console.log(responseText);
+          }
+        }
+
+        // Slow tool warning: if tools/call took >1000ms
+        if (rpcRequest.method === 'tools/call' && elapsed > 1000) {
+          const toolName = rpcRequest.params?.name || 'unknown';
+          log(`${colors.yellow}⚠️  Slow tool: ${toolName} took ${elapsed}ms${colors.reset}`, colors.yellow);
+        }
+
         // If error, show details
         if (statusCode >= 400) {
           try {
@@ -426,6 +452,12 @@ export async function startDevServer(entryUrl, port) {
   // Start listening
   server.listen(port, () => {
     logFramework(`Server running at http://localhost:${port}`, colors.cyan);
+
+    // Format watched directories for display
+    const watchedDirsDisplay = watcherInfo.watchedDirs
+      .map(({ path, recursive }) => `  ${colors.dim}${path}${recursive ? ' (recursive)' : ''}${colors.reset}`)
+      .join('\n');
+
     console.log(`
 ${colors.bright}${colors.cyan}🔧 mctx dev server running at http://localhost:${port}${colors.reset}
 
@@ -444,7 +476,8 @@ ${colors.bright}Claude Desktop config${colors.reset} ${colors.dim}(~/.config/cla
     }
   }${colors.reset}
 
-${colors.dim}Watching for changes...${colors.reset}
+${colors.bright}Watching for changes:${colors.reset}
+${watchedDirsDisplay}
 `);
   });
 

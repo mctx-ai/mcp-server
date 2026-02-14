@@ -81,8 +81,16 @@ function createRoleHelper(role) {
         throw new Error(`${role}.attach() requires base64 data as first argument`);
       }
 
-      if (!mimeType || typeof mimeType !== 'string') {
+      if (mimeType === undefined || mimeType === null) {
         throw new Error(`${role}.attach() requires mimeType as second argument (e.g., "image/png")`);
+      }
+
+      if (typeof mimeType !== 'string') {
+        throw new Error(`${role}.attach() requires mimeType as second argument (e.g., "image/png")`);
+      }
+
+      if (!/^[a-zA-Z]+\/[a-zA-Z0-9\-\+\.]+$/.test(mimeType)) {
+        throw new Error(`Invalid MIME type: "${mimeType}". Expected format: type/subtype (e.g., "image/png")`);
       }
 
       return {
