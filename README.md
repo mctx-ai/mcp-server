@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/mctx-ai/mctx/main/assets/logo-purple.png" alt="mctx logo" width="200"/>
+  <img src="https://mctx.ai/brand/logo-purple.png" alt="mctx logo" width="200"/>
 </p>
 
 <p align="center">
