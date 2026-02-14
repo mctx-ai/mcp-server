@@ -1,0 +1,42 @@
+{
+  "name": "@mctx-ai/mcp-server",
+  "version": "0.1.0",
+  "description": "Build MCP servers with an Express-like API — no protocol knowledge required",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test",
+    "lint": "echo 'Linting not configured yet'",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "anthropic",
+    "claude",
+    "server",
+    "framework"
+  ],
+  "author": "mctx, Inc.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mctx-ai/mcp-server.git",
+    "directory": "packages/server"
+  },
+  "bugs": {
+    "url": "https://github.com/mctx-ai/mcp-server/issues"
+  },
+  "homepage": "https://docs.mctx.ai"
+}

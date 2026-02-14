@@ -1,0 +1,11 @@
+server:
+  - packages/server/**
+
+dev:
+  - packages/dev/**
+
+ci:
+  - .github/**
+
+docs:
+  - "*.md"

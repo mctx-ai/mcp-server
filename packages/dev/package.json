@@ -1,0 +1,47 @@
+{
+  "name": "@mctx-ai/mcp-dev",
+  "version": "0.1.0",
+  "description": "Local development server for @mctx-ai/mcp-server with hot reload",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "mcp-dev": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test",
+    "lint": "echo 'Linting not configured yet'",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "development",
+    "hot-reload",
+    "dev-server"
+  ],
+  "author": "mctx, Inc.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mctx-ai/mcp-server.git",
+    "directory": "packages/dev"
+  },
+  "bugs": {
+    "url": "https://github.com/mctx-ai/mcp-server/issues"
+  },
+  "homepage": "https://docs.mctx.ai",
+  "peerDependencies": {
+    "@mctx-ai/mcp-server": "^0.1.0"
+  }
+}
