@@ -23,6 +23,12 @@ const LEVELS = {
 };
 
 /**
+ * Maximum log buffer size (FIFO eviction when exceeded)
+ * @private
+ */
+const MAX_LOG_BUFFER_SIZE = 10000;
+
+/**
  * Log buffer - stores notifications until server flushes them
  * @private
  */
@@ -54,6 +60,12 @@ function createLogNotification(level, data) {
   };
 
   logBuffer.push(notification);
+
+  // Enforce buffer size limit with FIFO eviction
+  if (logBuffer.length > MAX_LOG_BUFFER_SIZE) {
+    logBuffer.shift();
+  }
+
   return notification;
 }
 

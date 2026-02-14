@@ -142,13 +142,9 @@ function executeCustomCompletion(completeFn, argumentName, partialValue) {
   try {
     const result = completeFn(argumentName, partialValue);
 
-    // Handle async completion functions
+    // Async completion handlers are not supported
     if (result instanceof Promise) {
-      // Note: This function is sync, so we can't await here.
-      // The server layer should handle async completion properly.
-      // For now, return empty (this is a limitation of sync API)
-      console.warn('Async completion handlers not yet supported in generateCompletions');
-      return createEmptyCompletion();
+      throw new Error('Async completion handlers are not supported. Use synchronous handlers for fn.complete.');
     }
 
     // Filter and cap the results

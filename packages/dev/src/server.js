@@ -1,0 +1,361 @@
+/**
+ * @mctx-ai/mcp-dev Server
+ *
+ * HTTP server that wraps the app's fetch handler with developer-friendly features:
+ * - Initialize handshake handling
+ * - Request/response logging with timing
+ * - Rich error messages with stack traces
+ * - Hot reload support
+ */
+
+import { createServer } from 'http';
+import { watch } from './watcher.js';
+
+// ANSI color codes for logging
+const colors = {
+  reset: '\x1b[0m',
+  bright: '\x1b[1m',
+  dim: '\x1b[2m',
+  cyan: '\x1b[36m',
+  green: '\x1b[32m',
+  yellow: '\x1b[33m',
+  red: '\x1b[31m',
+  gray: '\x1b[90m',
+};
+
+/**
+ * Format timestamp for logs
+ */
+function timestamp() {
+  return new Date().toISOString().split('T')[1].split('.')[0];
+}
+
+/**
+ * Log with timestamp and color
+ */
+function log(message, color = colors.reset) {
+  console.log(`${colors.gray}[${timestamp()}]${colors.reset} ${color}${message}${colors.reset}`);
+}
+
+/**
+ * Handle MCP initialize handshake
+ * This is normally handled by the MCP client (Claude Desktop), but we need to
+ * handle it locally for development.
+ */
+function handleInitialize(rpcRequest) {
+  const { method, params = {} } = rpcRequest;
+
+  if (method === 'initialize') {
+    // Respond with server capabilities
+    return {
+      jsonrpc: '2.0',
+      id: rpcRequest.id,
+      result: {
+        protocolVersion: '2024-11-05',
+        capabilities: {
+          tools: {},
+          resources: {},
+          prompts: {},
+          logging: {},
+        },
+        serverInfo: {
+          name: 'mctx-dev',
+          version: '0.1.0',
+        },
+      },
+    };
+  }
+
+  if (method === 'initialized') {
+    // Silent acknowledgment for initialized notification
+    return null;
+  }
+
+  if (method === 'ping') {
+    // Respond to ping
+    return {
+      jsonrpc: '2.0',
+      id: rpcRequest.id,
+      result: {},
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Extract method name and arguments for logging
+ */
+function formatMethod(rpcRequest) {
+  const { method, params } = rpcRequest;
+
+  // For tools/call, show tool name
+  if (method === 'tools/call' && params?.name) {
+    return `${method} (${params.name})`;
+  }
+
+  // For resources/read, show URI
+  if (method === 'resources/read' && params?.uri) {
+    return `${method} (${params.uri})`;
+  }
+
+  // For prompts/get, show prompt name
+  if (method === 'prompts/get' && params?.name) {
+    return `${method} (${params.name})`;
+  }
+
+  return method;
+}
+
+/**
+ * Format error for display with helpful hints
+ */
+function formatError(error, rpcRequest) {
+  let formatted = `${colors.red}${colors.bright}Error:${colors.reset} ${error.message}\n`;
+
+  // Add stack trace if available
+  if (error.stack) {
+    const stack = error.stack
+      .split('\n')
+      .slice(1) // Skip first line (error message)
+      .map(line => `  ${colors.dim}${line.trim()}${colors.reset}`)
+      .join('\n');
+    formatted += `${stack}\n`;
+  }
+
+  // Add helpful hints for common errors
+  if (error.message.includes('not found')) {
+    formatted += `\n${colors.yellow}Hint:${colors.reset} Check if the ${rpcRequest.method.split('/')[0]} is registered in your server.\n`;
+  } else if (error.message.includes('required')) {
+    formatted += `\n${colors.yellow}Hint:${colors.reset} Check your request parameters. Some fields might be missing.\n`;
+  } else if (error.message.includes('undefined')) {
+    formatted += `\n${colors.yellow}Hint:${colors.reset} Did you forget to return a value from your handler?\n`;
+  }
+
+  return formatted;
+}
+
+/**
+ * Create Request-like object compatible with app's fetch handler
+ */
+function createRequest(body) {
+  return {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+    },
+    async json() {
+      return body;
+    },
+  };
+}
+
+/**
+ * Start the development server
+ */
+export async function startDevServer(entryUrl, port) {
+  let app = null;
+  let appModule = null;
+
+  // Load the user's app
+  async function loadApp() {
+    try {
+      // Clear module from cache for hot reload
+      if (entryUrl.startsWith('file://')) {
+        const modulePath = entryUrl;
+        // Add cache-busting query parameter for ES modules
+        const cacheBustedUrl = `${modulePath}?t=${Date.now()}`;
+        appModule = await import(cacheBustedUrl);
+      } else {
+        appModule = await import(entryUrl);
+      }
+
+      app = appModule.default;
+
+      if (!app) {
+        throw new Error('Entry file must have a default export (the app instance)');
+      }
+
+      if (typeof app.fetch !== 'function') {
+        throw new Error('App must have a fetch method (created via createServer())');
+      }
+
+      return true;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Initial load
+  await loadApp();
+
+  // Start file watcher for hot reload
+  const entryPath = new URL(entryUrl).pathname;
+  watch(entryPath, async () => {
+    try {
+      await loadApp();
+    } catch (error) {
+      console.error(`\n${colors.red}Reload failed:${colors.reset}`);
+      console.error(formatError(error, { method: 'reload' }));
+    }
+  });
+
+  // Create HTTP server
+  const server = createServer(async (req, res) => {
+    // Only accept POST requests
+    if (req.method !== 'POST') {
+      res.writeHead(405, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        jsonrpc: '2.0',
+        error: {
+          code: -32600,
+          message: 'Invalid Request - Only POST method is supported',
+        },
+        id: null,
+      }));
+      return;
+    }
+
+    // Read request body
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+
+    req.on('end', async () => {
+      let rpcRequest;
+      const startTime = Date.now();
+
+      try {
+        // Parse JSON body
+        rpcRequest = JSON.parse(body);
+      } catch (error) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          jsonrpc: '2.0',
+          error: {
+            code: -32700,
+            message: 'Parse error - Invalid JSON',
+          },
+          id: null,
+        }));
+
+        log(`${colors.red}✗${colors.reset} Parse error`, colors.red);
+        return;
+      }
+
+      // Log incoming request
+      const methodDisplay = formatMethod(rpcRequest);
+      log(`${colors.cyan}→${colors.reset} ${methodDisplay}`, colors.dim);
+
+      try {
+        // Handle initialize handshake locally
+        const initResponse = handleInitialize(rpcRequest);
+        if (initResponse !== null) {
+          const elapsed = Date.now() - startTime;
+
+          // For notifications (initialized), send 204
+          if (initResponse === null || rpcRequest.id === undefined) {
+            res.writeHead(204);
+            res.end();
+            log(`${colors.green}←${colors.reset} 204 (${elapsed}ms)`, colors.dim);
+            return;
+          }
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(initResponse));
+          log(`${colors.green}←${colors.reset} 200 (${elapsed}ms)`, colors.dim);
+          return;
+        }
+
+        // Delegate to app's fetch handler
+        const request = createRequest(rpcRequest);
+        const response = await app.fetch(request, {}, {});
+
+        const elapsed = Date.now() - startTime;
+
+        // Read response
+        const responseText = await response.text();
+        const statusCode = response.status;
+
+        // Send response
+        res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+        res.end(responseText);
+
+        // Log response
+        const statusColor = statusCode >= 200 && statusCode < 300 ? colors.green : colors.red;
+        log(`${statusColor}←${colors.reset} ${statusCode} (${elapsed}ms)`, colors.dim);
+
+        // If error, show details
+        if (statusCode >= 400) {
+          try {
+            const errorResponse = JSON.parse(responseText);
+            if (errorResponse.error) {
+              console.error(formatError(
+                new Error(errorResponse.error.message || 'Unknown error'),
+                rpcRequest
+              ));
+            }
+          } catch {
+            // Ignore parse errors
+          }
+        }
+
+      } catch (error) {
+        const elapsed = Date.now() - startTime;
+
+        // Return error response
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          jsonrpc: '2.0',
+          error: {
+            code: -32603,
+            message: error.message || 'Internal error',
+          },
+          id: rpcRequest.id || null,
+        }));
+
+        log(`${colors.red}←${colors.reset} error (${elapsed}ms)`, colors.red);
+        console.error(formatError(error, rpcRequest));
+      }
+    });
+  });
+
+  // Start listening
+  server.listen(port, () => {
+    console.log(`
+${colors.bright}${colors.cyan}🔧 mctx dev server running at http://localhost:${port}${colors.reset}
+
+${colors.bright}Test with curl:${colors.reset}
+  ${colors.dim}curl -X POST http://localhost:${port} \\
+    -H "Content-Type: application/json" \\
+    -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'${colors.reset}
+
+${colors.bright}Claude Desktop config${colors.reset} ${colors.dim}(~/.config/claude/claude_desktop_config.json):${colors.reset}
+  ${colors.dim}{
+    "mcpServers": {
+      "my-server": {
+        "command": "npx",
+        "args": ["mctx-dev", "${entryPath}"]
+      }
+    }
+  }${colors.reset}
+
+${colors.dim}Watching for changes...${colors.reset}
+`);
+  });
+
+  // Handle graceful shutdown
+  process.on('SIGINT', () => {
+    console.log(`\n${colors.dim}Shutting down...${colors.reset}`);
+    server.close(() => {
+      process.exit(0);
+    });
+  });
+
+  process.on('SIGTERM', () => {
+    server.close(() => {
+      process.exit(0);
+    });
+  });
+}

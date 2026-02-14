@@ -12,6 +12,14 @@ import { createProgress, PROGRESS_DEFAULTS } from './progress.js';
 import { createAsk } from './sampling.js';
 import { generateCompletions } from './completion.js';
 import { log, getLogBuffer, clearLogBuffer, setLogLevel } from './log.js';
+import {
+  sanitizeError as securitySanitizeError,
+  validateRequestSize,
+  validateResponseSize,
+  validateUriScheme,
+  canonicalizePath,
+  sanitizeInput,
+} from './security.js';
 
 /**
  * Safe JSON serialization handling circular refs, BigInt, Date
@@ -54,27 +62,11 @@ function safeSerialize(value) {
  * @returns {string} Sanitized message
  */
 function sanitizeError(error) {
-  let message = error.message || 'Unknown error';
+  // Determine if we're in production mode
+  // Check NODE_ENV or default to production (fail secure)
+  const isProduction = !process.env.NODE_ENV || process.env.NODE_ENV === 'production';
 
-  // Redact AWS keys
-  message = message.replace(/AKIA[0-9A-Z]{16}/g, '[REDACTED_AWS_KEY]');
-
-  // Redact JWT tokens
-  message = message.replace(/eyJ[a-zA-Z0-9_-]+\.eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+/g, '[REDACTED_JWT]');
-
-  // Redact connection strings
-  message = message.replace(/(?:mongodb|postgres|mysql):\/\/[^\s]+/g, '[REDACTED_CONNECTION_STRING]');
-
-  // Redact API keys (common patterns)
-  message = message.replace(/[a-zA-Z0-9_-]{32,}/g, (match) => {
-    // Only redact if it looks like a key (alphanumeric, long enough)
-    if (/^[a-zA-Z0-9_-]+$/.test(match) && match.length >= 32) {
-      return '[REDACTED_API_KEY]';
-    }
-    return match;
-  });
-
-  return message;
+  return securitySanitizeError(error, isProduction);
 }
 
 /**
@@ -88,7 +80,7 @@ function parseCursor(cursor) {
   try {
     const decoded = Buffer.from(cursor, 'base64').toString('utf-8');
     const offset = parseInt(decoded, 10);
-    return isNaN(offset) ? 0 : offset;
+    return (isNaN(offset) || offset < 0) ? 0 : offset;
   } catch {
     return 0;
   }
@@ -232,6 +224,9 @@ export function createServer() {
       throw new Error('Tool arguments are required');
     }
 
+    // Sanitize arguments to prevent prototype pollution
+    const sanitizedArgs = sanitizeInput(args);
+
     try {
       // Create ask function for sampling support
       // NOTE: In stateless HTTP mode, sendRequest callback isn't available.
@@ -239,18 +234,25 @@ export function createServer() {
       // For now, ask is null in HTTP mode.
       const ask = null; // TODO: Enable when streaming transport is added
 
-      // Check if handler is a generator function
-      const isGenerator = handler.constructor.name === 'GeneratorFunction' ||
-                         handler.constructor.name === 'AsyncGeneratorFunction';
+      // Check if handler is a generator function (robust against minification)
+      function isGeneratorFunction(fn) {
+        if (!fn || !fn.constructor) return false;
+        const name = fn.constructor.name;
+        if (name === 'GeneratorFunction' || name === 'AsyncGeneratorFunction') return true;
+        const proto = Object.getPrototypeOf(fn);
+        return proto && proto[Symbol.toStringTag] === 'GeneratorFunction';
+      }
+
+      const isGenerator = isGeneratorFunction(handler);
 
       if (isGenerator) {
         // Execute generator with progress tracking
-        return await executeGeneratorHandler(handler, args, ask, meta);
+        return await executeGeneratorHandler(handler, sanitizedArgs, ask, meta);
       }
 
       // Execute regular handler (support both sync and async)
       // Pass ask as second argument
-      const result = await handler(args, ask);
+      const result = await handler(sanitizedArgs, ask);
 
       // Wrap result based on type
       if (typeof result === 'string') {
@@ -295,11 +297,11 @@ export function createServer() {
     const progressNotifications = [];
 
     try {
-      // Execute generator
-      const generator = handler(args, ask);
-      let lastResult;
+      // Execute generator using iterator protocol to capture return value
+      const iterator = handler(args, ask);
+      let iterResult = await iterator.next();
 
-      for await (const value of generator) {
+      while (!iterResult.done) {
         yieldCount++;
 
         // Enforce max yields guardrail
@@ -318,6 +320,7 @@ export function createServer() {
         }
 
         // Check if yielded value is a progress notification
+        const value = iterResult.value;
         if (value && typeof value === 'object' && value.type === 'progress') {
           // Store progress notification
           // In streaming mode, would send via progressToken
@@ -327,21 +330,22 @@ export function createServer() {
               ...value,
             });
           }
-        } else {
-          // Non-progress yield - store as last result
-          lastResult = value;
         }
+
+        // Get next value
+        iterResult = await iterator.next();
       }
 
-      // Return final result from generator's return value
-      // Generator's return value is the actual result
-      if (typeof lastResult === 'string') {
+      // Return final result from generator's return value (not last yielded value)
+      const finalResult = iterResult.value;
+
+      if (typeof finalResult === 'string') {
         return {
-          content: [{ type: 'text', text: lastResult }],
+          content: [{ type: 'text', text: finalResult }],
         };
       }
 
-      const serialized = safeSerialize(lastResult);
+      const serialized = safeSerialize(finalResult);
       return {
         content: [{ type: 'text', text: serialized }],
       };
@@ -415,17 +419,25 @@ export function createServer() {
       throw new Error('Resource URI is required');
     }
 
+    // Validate URI scheme (prevent dangerous schemes like file://, javascript:, data:)
+    if (!validateUriScheme(uri)) {
+      throw new Error(`Invalid URI scheme: only http:// and https:// are allowed`);
+    }
+
+    // Canonicalize path to prevent traversal attacks
+    const canonicalUri = canonicalizePath(uri);
+
     // Find matching resource (try exact match first, then templates)
     let handler = null;
     let extractedParams = {};
 
-    // Try exact match first
-    if (resources.has(uri)) {
-      handler = resources.get(uri);
+    // Try exact match first (use canonical URI for matching)
+    if (resources.has(canonicalUri)) {
+      handler = resources.get(canonicalUri);
     } else {
       // Try template matching using uri.js module
       for (const [registeredUri, h] of resources.entries()) {
-        const match = matchUri(registeredUri, uri);
+        const match = matchUri(registeredUri, canonicalUri);
         if (match) {
           handler = h;
           extractedParams = match.params || {};
@@ -442,8 +454,11 @@ export function createServer() {
       // Create ask function (null in HTTP mode)
       const ask = null;
 
-      // Execute handler with extracted params and ask
-      const result = await handler(extractedParams, ask);
+      // Sanitize extracted params to prevent prototype pollution
+      const sanitizedParams = sanitizeInput(extractedParams);
+
+      // Execute handler with sanitized params and ask
+      const result = await handler(sanitizedParams, ask);
 
       // Wrap result as resource content
       const mimeType = handler.mimeType || 'text/plain';
@@ -537,8 +552,11 @@ export function createServer() {
       // Create ask function (null in HTTP mode)
       const ask = null;
 
-      // Execute handler with ask
-      const result = await handler(args || {}, ask);
+      // Sanitize arguments to prevent prototype pollution
+      const sanitizedArgs = sanitizeInput(args || {});
+
+      // Execute handler with sanitized args
+      const result = await handler(sanitizedArgs, ask);
 
       // If handler returns a string, wrap as user message
       if (typeof result === 'string') {
@@ -675,7 +693,9 @@ export function createServer() {
         return handleLoggingSetLevel(params);
 
       default:
-        throw { code: -32601, message: 'Method not found' };
+        const error = new Error('Method not found');
+        error.code = -32601;
+        throw error;
     }
   }
 
@@ -706,10 +726,17 @@ export function createServer() {
     }
 
     let rpcRequest;
+    let rawBody;
 
     try {
+      // Get raw body text for size validation
+      rawBody = await request.text();
+
+      // Validate request size before parsing (prevent DoS)
+      validateRequestSize(rawBody);
+
       // Parse JSON body
-      rpcRequest = await request.json();
+      rpcRequest = JSON.parse(rawBody);
     } catch (error) {
       // Parse error
       return new Response(
@@ -761,17 +788,23 @@ export function createServer() {
       // For now, just clear them since we can't send them in stateless HTTP mode
 
       // For notifications (no id), return 204 No Content
-      if (rpcRequest.id === undefined || rpcRequest.id === null) {
+      if (!('id' in rpcRequest)) {
         return new Response(null, { status: 204 });
       }
 
+      // Build response object
+      const responseBody = {
+        jsonrpc: '2.0',
+        id: rpcRequest.id,
+        result,
+      };
+
+      // Validate response size before sending (prevent DoS)
+      validateResponseSize(responseBody);
+
       // Return JSON-RPC success response
       return new Response(
-        JSON.stringify({
-          jsonrpc: '2.0',
-          id: rpcRequest.id,
-          result,
-        }),
+        JSON.stringify(responseBody),
         {
           status: 200,
           headers: { 'Content-Type': 'application/json' },

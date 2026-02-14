@@ -3,25 +3,19 @@
   "version": "0.1.0",
   "description": "Local development server for @mctx-ai/mcp-server with hot reload",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./src/cli.js",
   "bin": {
-    "mcp-dev": "./dist/cli.js"
+    "mctx-dev": "./src/cli.js"
   },
   "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
+    ".": "./src/cli.js"
   },
   "files": [
-    "dist"
+    "src"
   ],
   "scripts": {
-    "build": "tsc",
     "test": "node --test",
-    "lint": "echo 'Linting not configured yet'",
-    "prepublishOnly": "npm run build"
+    "lint": "echo 'Linting not configured yet'"
   },
   "keywords": [
     "mcp",
