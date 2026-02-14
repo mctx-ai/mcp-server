@@ -1,5 +1,5 @@
 {
-  "packages/server": "0.1.0",
-  "packages/dev": "0.1.0",
-  "packages/create-mctx-server": "0.1.0"
+  "packages/server": "0.2.0",
+  "packages/dev": "0.2.0",
+  "packages/create-mctx-server": "0.2.0"
 }
