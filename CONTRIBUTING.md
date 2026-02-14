@@ -10,19 +10,24 @@ Thank you for your interest in contributing! We welcome contributions from the c
    cd mcp-server
    ```
 
-2. **Install dependencies:**
+2. **Install pnpm (if not already installed):**
    ```bash
-   npm install
+   npm install -g pnpm
    ```
 
-3. **Build all packages:**
+3. **Install dependencies:**
    ```bash
-   npm run build
+   pnpm install
    ```
 
-4. **Run tests:**
+4. **Build all packages:**
    ```bash
-   npm test
+   pnpm run build
+   ```
+
+5. **Run tests:**
+   ```bash
+   pnpm test
    ```
 
 ## Commit Convention
@@ -56,9 +61,9 @@ docs: update quick start example
 
 2. **Make your changes** and ensure:
    - Code follows existing patterns
-   - Tests pass (`npm test`)
-   - Build succeeds (`npm run build`)
-   - Code is formatted (`npm run format`)
+   - Tests pass (`pnpm test`)
+   - Build succeeds (`pnpm run build`)
+   - Code is formatted (`pnpm run format`)
 
 3. **Sign your commits** with Developer Certificate of Origin:
    ```bash
