@@ -31,10 +31,17 @@ function timestamp() {
 }
 
 /**
- * Log with timestamp and color
+ * Log with timestamp and color (Fix #8: separated framework vs request logs)
  */
 function log(message, color = colors.reset) {
   console.log(`${colors.gray}[${timestamp()}]${colors.reset} ${color}${message}${colors.reset}`);
+}
+
+/**
+ * Log framework events (startup, reload, errors)
+ */
+function logFramework(message, color = colors.reset) {
+  console.log(`${colors.gray}[${timestamp()}]${colors.reset} ${colors.bright}[mctx-dev]${colors.reset} ${color}${message}${colors.reset}`);
 }
 
 /**
@@ -67,8 +74,8 @@ function handleInitialize(rpcRequest) {
   }
 
   if (method === 'initialized') {
-    // Silent acknowledgment for initialized notification
-    return null;
+    // Fix #3: Return special marker for notifications (no response per JSON-RPC 2.0)
+    return { _notification: true };
   }
 
   if (method === 'ping') {
@@ -186,22 +193,62 @@ export async function startDevServer(entryUrl, port) {
     }
   }
 
-  // Initial load
-  await loadApp();
+  // Initial load (Fix #2: handle syntax errors gracefully)
+  try {
+    await loadApp();
+  } catch (error) {
+    // Show error and continue - watcher will retry on file changes
+    logFramework(`Failed to load ${entryUrl.split('/').pop()}`, colors.red);
+
+    if (error instanceof SyntaxError) {
+      console.error(`${colors.red}${colors.bright}SyntaxError:${colors.reset} ${error.message}`);
+      if (error.stack) {
+        const stackLines = error.stack.split('\n').slice(1, 4);
+        console.error(colors.dim + stackLines.join('\n') + colors.reset);
+      }
+      logFramework('Watching for changes... fix the error and save to retry.', colors.yellow);
+    } else {
+      console.error(formatError(error, { method: 'initial-load' }));
+    }
+  }
 
   // Start file watcher for hot reload
   const entryPath = new URL(entryUrl).pathname;
   watch(entryPath, async () => {
     try {
       await loadApp();
+      logFramework('Reload successful', colors.green);
     } catch (error) {
-      console.error(`\n${colors.red}Reload failed:${colors.reset}`);
-      console.error(formatError(error, { method: 'reload' }));
+      logFramework('Reload failed', colors.red);
+
+      if (error instanceof SyntaxError) {
+        console.error(`${colors.red}${colors.bright}SyntaxError:${colors.reset} ${error.message}`);
+        if (error.stack) {
+          const stackLines = error.stack.split('\n').slice(1, 4);
+          console.error(colors.dim + stackLines.join('\n') + colors.reset);
+        }
+      } else {
+        console.error(formatError(error, { method: 'reload' }));
+      }
     }
   });
 
   // Create HTTP server
   const server = createServer(async (req, res) => {
+    // Fix #2: If app failed to load initially, return error
+    if (!app) {
+      res.writeHead(503, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        jsonrpc: '2.0',
+        error: {
+          code: -32000,
+          message: 'Server initialization failed - fix syntax errors and save to retry',
+        },
+        id: null,
+      }));
+      return;
+    }
+
     // Only accept POST requests
     if (req.method !== 'POST') {
       res.writeHead(405, { 'Content-Type': 'application/json' });
@@ -216,13 +263,36 @@ export async function startDevServer(entryUrl, port) {
       return;
     }
 
-    // Read request body
+    // Read request body (Fix #6: add timeout protection)
     let body = '';
+    let timedOut = false;
+
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      req.destroy();
+      res.writeHead(408, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        jsonrpc: '2.0',
+        error: {
+          code: -32000,
+          message: 'Request timeout - body not received within 30s',
+        },
+        id: null,
+      }));
+      logFramework('Request timeout', colors.red);
+    }, 30000);
+
     req.on('data', chunk => {
       body += chunk.toString();
     });
 
     req.on('end', async () => {
+      clearTimeout(timeout);
+
+      if (timedOut) {
+        return;
+      }
+
       let rpcRequest;
       const startTime = Date.now();
 
@@ -230,17 +300,22 @@ export async function startDevServer(entryUrl, port) {
         // Parse JSON body
         rpcRequest = JSON.parse(body);
       } catch (error) {
+        // Fix #9: include body snippet in parse error
+        const bodySnippet = body.length > 100 ? body.substring(0, 100) + '...' : body;
+
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           jsonrpc: '2.0',
           error: {
             code: -32700,
-            message: 'Parse error - Invalid JSON',
+            message: `Parse error - Invalid JSON: ${error.message}`,
+            data: { bodySnippet },
           },
           id: null,
         }));
 
         log(`${colors.red}✗${colors.reset} Parse error`, colors.red);
+        console.error(`${colors.dim}Body snippet: ${bodySnippet}${colors.reset}`);
         return;
       }
 
@@ -254,12 +329,28 @@ export async function startDevServer(entryUrl, port) {
         if (initResponse !== null) {
           const elapsed = Date.now() - startTime;
 
-          // For notifications (initialized), send 204
-          if (initResponse === null || rpcRequest.id === undefined) {
+          // Fix #3: For notifications (initialized), send 204 No Content
+          if (initResponse._notification === true) {
             res.writeHead(204);
             res.end();
             log(`${colors.green}←${colors.reset} 204 (${elapsed}ms)`, colors.dim);
             return;
+          }
+
+          // Fix #5: Include app capabilities if available
+          if (rpcRequest.method === 'initialize' && app) {
+            const capabilities = initResponse.result.capabilities;
+
+            // Merge app capabilities if exposed
+            if (app.tools && typeof app.tools.list === 'function') {
+              capabilities.tools = app.tools.capabilities || {};
+            }
+            if (app.resources && typeof app.resources.list === 'function') {
+              capabilities.resources = app.resources.capabilities || {};
+            }
+            if (app.prompts && typeof app.prompts.list === 'function') {
+              capabilities.prompts = app.prompts.capabilities || {};
+            }
           }
 
           res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -321,8 +412,20 @@ export async function startDevServer(entryUrl, port) {
     });
   });
 
+  // Fix #1: Handle EADDRINUSE port conflicts
+  server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+      // Propagate to CLI for proper error handling
+      throw error;
+    } else {
+      logFramework(`Server error: ${error.message}`, colors.red);
+      throw error;
+    }
+  });
+
   // Start listening
   server.listen(port, () => {
+    logFramework(`Server running at http://localhost:${port}`, colors.cyan);
     console.log(`
 ${colors.bright}${colors.cyan}🔧 mctx dev server running at http://localhost:${port}${colors.reset}
 

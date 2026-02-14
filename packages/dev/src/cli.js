@@ -7,6 +7,7 @@
  * Example: npx mctx-dev index.js
  */
 
+import { existsSync } from 'fs';
 import { resolve } from 'path';
 import { pathToFileURL } from 'url';
 import { startDevServer } from './server.js';
@@ -60,6 +61,13 @@ if (isNaN(port) || port < 1 || port > 65535) {
 // Resolve entry file to absolute path
 const entryPath = resolve(process.cwd(), entryFile);
 
+// Check if file exists (Fix #4)
+if (!existsSync(entryPath)) {
+  console.error(`Error: File not found: ${entryFile}`);
+  console.error(`Resolved path: ${entryPath}`);
+  process.exit(1);
+}
+
 // Convert to file URL for dynamic import
 const entryUrl = pathToFileURL(entryPath).href;
 
@@ -67,6 +75,13 @@ const entryUrl = pathToFileURL(entryPath).href;
 try {
   await startDevServer(entryUrl, port);
 } catch (error) {
+  // Handle EADDRINUSE port conflicts (Fix #1)
+  if (error.code === 'EADDRINUSE') {
+    console.error(`\nError: Port ${port} is already in use.`);
+    console.error(`Try a different port: npx mctx-dev ${entryFile} --port ${port + 1}`);
+    process.exit(1);
+  }
+
   console.error('Failed to start dev server:', error.message);
 
   if (error.code === 'ERR_MODULE_NOT_FOUND') {

@@ -16,14 +16,3 @@ export { T, buildInputSchema } from './types.js';
 export { conversation } from './conversation.js';
 export { createProgress } from './progress.js';
 export { log } from './log.js';
-
-// Security functions
-export {
-  sanitizeError,
-  validateRequestSize,
-  validateResponseSize,
-  validateStringInput,
-  validateUriScheme,
-  canonicalizePath,
-  sanitizeInput,
-} from './security.js';

@@ -3,6 +3,12 @@
  *
  * Watches entry file and its directory for changes and triggers hot reload.
  * Uses Node's built-in fs.watch with debouncing to avoid rapid reloads.
+ *
+ * LIMITATION (Fix #7): Currently only watches the entry file's directory.
+ * Changes to imported dependencies or files in parent/child directories
+ * will NOT trigger a reload. For full dependency watching, consider using
+ * a more sophisticated tool like chokidar or manually watching src/, lib/
+ * directories if they exist.
  */
 
 import { watch as fsWatch } from 'fs';
@@ -35,6 +41,9 @@ function log(message) {
  *
  * @param {string} filePath - Absolute path to file to watch
  * @param {Function} onChange - Callback when file changes
+ *
+ * Note: Only watches the entry file's directory. Changes to imported
+ * dependencies or other directories will NOT trigger reload.
  */
 export function watch(filePath, onChange) {
   const dir = dirname(filePath);
@@ -44,6 +53,7 @@ export function watch(filePath, onChange) {
   const DEBOUNCE_MS = 100;
 
   // Watch the directory (more reliable than watching individual files)
+  // Fix #7: This only watches the entry file's directory, not dependencies
   const watcher = fsWatch(dir, { recursive: false }, (eventType, changedFile) => {
     // Filter for changes to our target file
     if (changedFile !== filename) {

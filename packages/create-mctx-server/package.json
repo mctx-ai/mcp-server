@@ -1,0 +1,30 @@
+{
+  "name": "create-mctx-server",
+  "version": "0.1.0",
+  "description": "Create a new mctx MCP server project",
+  "type": "module",
+  "bin": {
+    "create-mctx-server": "index.js"
+  },
+  "files": [
+    "index.js"
+  ],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "create",
+    "scaffold",
+    "generator"
+  ],
+  "author": "mctx, Inc.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mctx-ai/mcp-server.git",
+    "directory": "packages/create-mctx-server"
+  },
+  "bugs": {
+    "url": "https://github.com/mctx-ai/mcp-server/issues"
+  },
+  "homepage": "https://docs.mctx.ai"
+}
