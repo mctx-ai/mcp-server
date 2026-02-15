@@ -110,10 +110,10 @@ Functions carry metadata as properties:
 function greet({ name }) {
   return `Hello, ${name}!`;
 }
-greet.description = 'Greet someone by name';
+greet.description = "Greet someone by name";
 greet.input = { name: T.string({ required: true }) };
 
-app.tool('greet', greet);
+app.tool("greet", greet);
 ```
 
 ### Handler Types
@@ -143,12 +143,14 @@ app.tool('greet', greet);
 **Format:** Conventional Commits (`type(scope): description`)
 
 **Types that trigger releases:**
+
 - `feat(scope):` → Minor version bump
 - `fix(scope):` → Patch version bump
 - `perf(scope):` → Patch version bump
 - `revert(scope):` → Patch version bump
 
 **Types that don't trigger releases:**
+
 - `docs:`, `chore:`, `ci:`, `test:`, `refactor:`, `style:`, `build:`
 
 ### DCO Requirement
