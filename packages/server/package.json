@@ -43,6 +43,10 @@
     "url": "https://github.com/mctx-ai/mcp-server/issues"
   },
   "homepage": "https://docs.mctx.ai",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
     "@types/node": "^22.0.0",
