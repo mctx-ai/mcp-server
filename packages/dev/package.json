@@ -1,6 +1,6 @@
 {
   "name": "@mctx-ai/mcp-dev",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Local development server for @mctx-ai/mcp-server with hot reload",
   "type": "module",
   "main": "./src/cli.js",
