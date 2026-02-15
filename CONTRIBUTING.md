@@ -5,22 +5,26 @@ Thank you for your interest in contributing! We welcome contributions from the c
 ## Development Setup
 
 1. **Clone the repository:**
+
    ```bash
    git clone https://github.com/mctx-ai/mcp-server.git
    cd mcp-server
    ```
 
 2. **Install pnpm (if not already installed):**
+
    ```bash
    npm install -g pnpm
    ```
 
 3. **Install dependencies:**
+
    ```bash
    pnpm install
    ```
 
 4. **Build all packages:**
+
    ```bash
    pnpm run build
    ```
@@ -37,6 +41,7 @@ We use [Conventional Commits](https://www.conventionalcommits.org/) for clear an
 **Format:** `<type>(<scope>): <description>`
 
 **Types:**
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation changes
@@ -46,6 +51,7 @@ We use [Conventional Commits](https://www.conventionalcommits.org/) for clear an
 - `perf`: Performance improvements
 
 **Examples:**
+
 ```
 feat(server): add middleware support
 fix(dev): resolve hot reload race condition
@@ -55,6 +61,7 @@ docs: update quick start example
 ## Pull Request Process
 
 1. **Create a branch** from `main`:
+
    ```bash
    git checkout -b feat/your-feature-name
    ```
@@ -66,6 +73,7 @@ docs: update quick start example
    - Code is formatted (`pnpm run format`)
 
 3. **Sign your commits** with Developer Certificate of Origin:
+
    ```bash
    git commit -s -m "feat: your commit message"
    ```
@@ -99,6 +107,7 @@ Signed-off-by: Your Name <your.email@example.com>
 ## Questions?
 
 If you have questions or need help, feel free to:
+
 - Open an issue for discussion
 - Ask in pull request comments
 - Check the documentation at https://docs.mctx.ai

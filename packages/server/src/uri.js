@@ -19,7 +19,7 @@
  * isTemplate('db://products/{id}/reviews')   // true
  */
 export function isTemplate(uri) {
-  if (!uri || typeof uri !== 'string') return false;
+  if (!uri || typeof uri !== "string") return false;
   return /\{[^}]+\}/.test(uri);
 }
 
@@ -35,7 +35,7 @@ export function isTemplate(uri) {
  * extractTemplateVars('db://customers/123')                     // []
  */
 export function extractTemplateVars(uri) {
-  if (!uri || typeof uri !== 'string') return [];
+  if (!uri || typeof uri !== "string") return [];
 
   const matches = uri.matchAll(/\{([^}]+)\}/g);
   const vars = [];
@@ -46,7 +46,7 @@ export function extractTemplateVars(uri) {
     // Validate: alphanumeric + underscore only (RFC 6570 Level 1)
     if (!/^[a-zA-Z0-9_]+$/.test(varName)) {
       throw new Error(
-        `Invalid template variable name: "${varName}". Must contain only alphanumeric characters and underscores.`
+        `Invalid template variable name: "${varName}". Must contain only alphanumeric characters and underscores.`,
       );
     }
 
@@ -86,8 +86,8 @@ export function extractTemplateVars(uri) {
  */
 export function matchUri(registeredUri, requestUri) {
   // Guard clauses
-  if (!registeredUri || typeof registeredUri !== 'string') return null;
-  if (!requestUri || typeof requestUri !== 'string') return null;
+  if (!registeredUri || typeof registeredUri !== "string") return null;
+  if (!requestUri || typeof requestUri !== "string") return null;
 
   // Static route: exact string match
   if (!isTemplate(registeredUri)) {
@@ -100,8 +100,8 @@ export function matchUri(registeredUri, requestUri) {
   // Escape regex special characters except {placeholders}
   // Convert {var} to named capture group
   let pattern = registeredUri
-    .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')  // Escape regex chars
-    .replace(/\\\{([^}]+)\\\}/g, '([^/]+)'); // Convert {var} to capture group
+    .replace(/[.*+?^${}()|[\]\\]/g, "\\$&") // Escape regex chars
+    .replace(/\\\{([^}]+)\\\}/g, "([^/]+)"); // Convert {var} to capture group
 
   pattern = `^${pattern}$`; // Exact match (anchored)
 

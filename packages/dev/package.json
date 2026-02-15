@@ -36,6 +36,6 @@
   },
   "homepage": "https://docs.mctx.ai",
   "peerDependencies": {
-    "@mctx-ai/mcp-server": "^0.1.0"
+    "@mctx-ai/mcp-server": "workspace:^"
   }
 }

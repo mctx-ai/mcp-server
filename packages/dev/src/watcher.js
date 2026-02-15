@@ -10,22 +10,22 @@
  * - Falls back to entry file directory if no package.json found
  */
 
-import { watch as fsWatch, existsSync } from 'fs';
-import { dirname, basename, join } from 'path';
+import { watch as fsWatch, existsSync } from "fs";
+import { dirname, basename, join } from "path";
 
 // ANSI color codes
 const colors = {
-  reset: '\x1b[0m',
-  dim: '\x1b[2m',
-  green: '\x1b[32m',
-  gray: '\x1b[90m',
+  reset: "\x1b[0m",
+  dim: "\x1b[2m",
+  green: "\x1b[32m",
+  gray: "\x1b[90m",
 };
 
 /**
  * Format timestamp for logs
  */
 function timestamp() {
-  return new Date().toISOString().split('T')[1].split('.')[0];
+  return new Date().toISOString().split("T")[1].split(".")[0];
 }
 
 /**
@@ -43,7 +43,7 @@ function findProjectRoot(startPath) {
 
   // Walk up until we find package.json or reach root
   while (currentPath !== dirname(currentPath)) {
-    const packageJsonPath = join(currentPath, 'package.json');
+    const packageJsonPath = join(currentPath, "package.json");
     if (existsSync(packageJsonPath)) {
       return currentPath;
     }
@@ -68,7 +68,7 @@ function getWatchDirs(entryFilePath) {
   const watchDirs = [];
 
   // Watch common directories recursively if they exist
-  const commonDirs = ['src', 'lib', 'utils'];
+  const commonDirs = ["src", "lib", "utils"];
   for (const dir of commonDirs) {
     const dirPath = join(projectRoot, dir);
     if (existsSync(dirPath)) {
@@ -105,7 +105,7 @@ export function watch(filePath, onChange) {
   for (const { path, recursive } of watchDirs) {
     const watcher = fsWatch(path, { recursive }, (eventType, changedFile) => {
       // Only watch .js files
-      if (changedFile && !changedFile.endsWith('.js')) {
+      if (changedFile && !changedFile.endsWith(".js")) {
         return;
       }
 
@@ -115,13 +115,15 @@ export function watch(filePath, onChange) {
       }
 
       debounceTimer = setTimeout(() => {
-        log(`${colors.green}Reloaded:${colors.reset} ${colors.dim}${changedFile || 'file'}${colors.reset}`);
+        log(
+          `${colors.green}Reloaded:${colors.reset} ${colors.dim}${changedFile || "file"}${colors.reset}`,
+        );
         onChange();
       }, DEBOUNCE_MS);
     });
 
     // Handle watcher errors
-    watcher.on('error', (error) => {
+    watcher.on("error", (error) => {
       console.error(`Watcher error: ${error.message}`);
     });
 
@@ -129,8 +131,8 @@ export function watch(filePath, onChange) {
   }
 
   // Clean up on process exit
-  process.on('exit', () => {
-    watchers.forEach(w => w.close());
+  process.on("exit", () => {
+    watchers.forEach((w) => w.close());
   });
 
   return { watchers, watchedDirs: watchDirs };

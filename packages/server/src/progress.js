@@ -54,8 +54,10 @@ export const PROGRESS_DEFAULTS = {
  */
 export function createProgress(total) {
   // Validate total if provided
-  if (total !== undefined && (typeof total !== 'number' || total <= 0)) {
-    throw new Error('createProgress() total must be a positive number if provided');
+  if (total !== undefined && (typeof total !== "number" || total <= 0)) {
+    throw new Error(
+      "createProgress() total must be a positive number if provided",
+    );
   }
 
   let currentStep = 0;
@@ -68,7 +70,7 @@ export function createProgress(total) {
     currentStep++;
 
     const notification = {
-      type: 'progress',
+      type: "progress",
       progress: currentStep,
     };
 

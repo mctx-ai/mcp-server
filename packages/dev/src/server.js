@@ -8,40 +8,44 @@
  * - Hot reload support
  */
 
-import { createServer } from 'http';
-import { watch } from './watcher.js';
+import { createServer } from "http";
+import { watch } from "./watcher.js";
 
 // ANSI color codes for logging
 const colors = {
-  reset: '\x1b[0m',
-  bright: '\x1b[1m',
-  dim: '\x1b[2m',
-  cyan: '\x1b[36m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  red: '\x1b[31m',
-  gray: '\x1b[90m',
+  reset: "\x1b[0m",
+  bright: "\x1b[1m",
+  dim: "\x1b[2m",
+  cyan: "\x1b[36m",
+  green: "\x1b[32m",
+  yellow: "\x1b[33m",
+  red: "\x1b[31m",
+  gray: "\x1b[90m",
 };
 
 /**
  * Format timestamp for logs
  */
 function timestamp() {
-  return new Date().toISOString().split('T')[1].split('.')[0];
+  return new Date().toISOString().split("T")[1].split(".")[0];
 }
 
 /**
  * Log with timestamp and color (Fix #8: separated framework vs request logs)
  */
 function log(message, color = colors.reset) {
-  console.log(`${colors.gray}[${timestamp()}]${colors.reset} ${color}${message}${colors.reset}`);
+  console.log(
+    `${colors.gray}[${timestamp()}]${colors.reset} ${color}${message}${colors.reset}`,
+  );
 }
 
 /**
  * Log framework events (startup, reload, errors)
  */
 function logFramework(message, color = colors.reset) {
-  console.log(`${colors.gray}[${timestamp()}]${colors.reset} ${colors.bright}[mctx-dev]${colors.reset} ${color}${message}${colors.reset}`);
+  console.log(
+    `${colors.gray}[${timestamp()}]${colors.reset} ${colors.bright}[mctx-dev]${colors.reset} ${color}${message}${colors.reset}`,
+  );
 }
 
 /**
@@ -52,13 +56,13 @@ function logFramework(message, color = colors.reset) {
 function handleInitialize(rpcRequest) {
   const { method, params = {} } = rpcRequest;
 
-  if (method === 'initialize') {
+  if (method === "initialize") {
     // Respond with server capabilities
     return {
-      jsonrpc: '2.0',
+      jsonrpc: "2.0",
       id: rpcRequest.id,
       result: {
-        protocolVersion: '2024-11-05',
+        protocolVersion: "2024-11-05",
         capabilities: {
           tools: {},
           resources: {},
@@ -66,22 +70,22 @@ function handleInitialize(rpcRequest) {
           logging: {},
         },
         serverInfo: {
-          name: 'mctx-dev',
-          version: '0.1.0',
+          name: "mctx-dev",
+          version: "0.1.0",
         },
       },
     };
   }
 
-  if (method === 'initialized') {
+  if (method === "initialized") {
     // Fix #3: Return special marker for notifications (no response per JSON-RPC 2.0)
     return { _notification: true };
   }
 
-  if (method === 'ping') {
+  if (method === "ping") {
     // Respond to ping
     return {
-      jsonrpc: '2.0',
+      jsonrpc: "2.0",
       id: rpcRequest.id,
       result: {},
     };
@@ -97,17 +101,17 @@ function formatMethod(rpcRequest) {
   const { method, params } = rpcRequest;
 
   // For tools/call, show tool name
-  if (method === 'tools/call' && params?.name) {
+  if (method === "tools/call" && params?.name) {
     return `${method} (${params.name})`;
   }
 
   // For resources/read, show URI
-  if (method === 'resources/read' && params?.uri) {
+  if (method === "resources/read" && params?.uri) {
     return `${method} (${params.uri})`;
   }
 
   // For prompts/get, show prompt name
-  if (method === 'prompts/get' && params?.name) {
+  if (method === "prompts/get" && params?.name) {
     return `${method} (${params.name})`;
   }
 
@@ -123,19 +127,19 @@ function formatError(error, rpcRequest) {
   // Add stack trace if available
   if (error.stack) {
     const stack = error.stack
-      .split('\n')
+      .split("\n")
       .slice(1) // Skip first line (error message)
-      .map(line => `  ${colors.dim}${line.trim()}${colors.reset}`)
-      .join('\n');
+      .map((line) => `  ${colors.dim}${line.trim()}${colors.reset}`)
+      .join("\n");
     formatted += `${stack}\n`;
   }
 
   // Add helpful hints for common errors
-  if (error.message.includes('not found')) {
-    formatted += `\n${colors.yellow}Hint:${colors.reset} Check if the ${rpcRequest.method.split('/')[0]} is registered in your server.\n`;
-  } else if (error.message.includes('required')) {
+  if (error.message.includes("not found")) {
+    formatted += `\n${colors.yellow}Hint:${colors.reset} Check if the ${rpcRequest.method.split("/")[0]} is registered in your server.\n`;
+  } else if (error.message.includes("required")) {
     formatted += `\n${colors.yellow}Hint:${colors.reset} Check your request parameters. Some fields might be missing.\n`;
-  } else if (error.message.includes('undefined')) {
+  } else if (error.message.includes("undefined")) {
     formatted += `\n${colors.yellow}Hint:${colors.reset} Did you forget to return a value from your handler?\n`;
   }
 
@@ -147,9 +151,9 @@ function formatError(error, rpcRequest) {
  */
 function createRequest(body) {
   return {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'content-type': 'application/json',
+      "content-type": "application/json",
     },
     async json() {
       return body;
@@ -165,13 +169,13 @@ export async function startDevServer(entryUrl, port) {
   let appModule = null;
 
   // Check if verbose logging is enabled
-  const isVerbose = process.env.MCTX_VERBOSE === 'true';
+  const isVerbose = process.env.MCTX_VERBOSE === "true";
 
   // Load the user's app
   async function loadApp() {
     try {
       // Clear module from cache for hot reload
-      if (entryUrl.startsWith('file://')) {
+      if (entryUrl.startsWith("file://")) {
         const modulePath = entryUrl;
         // Add cache-busting query parameter for ES modules
         const cacheBustedUrl = `${modulePath}?t=${Date.now()}`;
@@ -183,11 +187,15 @@ export async function startDevServer(entryUrl, port) {
       app = appModule.default;
 
       if (!app) {
-        throw new Error('Entry file must have a default export (the app instance)');
+        throw new Error(
+          "Entry file must have a default export (the app instance)",
+        );
       }
 
-      if (typeof app.fetch !== 'function') {
-        throw new Error('App must have a fetch method (created via createServer())');
+      if (typeof app.fetch !== "function") {
+        throw new Error(
+          "App must have a fetch method (created via createServer())",
+        );
       }
 
       return true;
@@ -201,17 +209,22 @@ export async function startDevServer(entryUrl, port) {
     await loadApp();
   } catch (error) {
     // Show error and continue - watcher will retry on file changes
-    logFramework(`Failed to load ${entryUrl.split('/').pop()}`, colors.red);
+    logFramework(`Failed to load ${entryUrl.split("/").pop()}`, colors.red);
 
     if (error instanceof SyntaxError) {
-      console.error(`${colors.red}${colors.bright}SyntaxError:${colors.reset} ${error.message}`);
+      console.error(
+        `${colors.red}${colors.bright}SyntaxError:${colors.reset} ${error.message}`,
+      );
       if (error.stack) {
-        const stackLines = error.stack.split('\n').slice(1, 4);
-        console.error(colors.dim + stackLines.join('\n') + colors.reset);
+        const stackLines = error.stack.split("\n").slice(1, 4);
+        console.error(colors.dim + stackLines.join("\n") + colors.reset);
       }
-      logFramework('Watching for changes... fix the error and save to retry.', colors.yellow);
+      logFramework(
+        "Watching for changes... fix the error and save to retry.",
+        colors.yellow,
+      );
     } else {
-      console.error(formatError(error, { method: 'initial-load' }));
+      console.error(formatError(error, { method: "initial-load" }));
     }
   }
 
@@ -220,18 +233,20 @@ export async function startDevServer(entryUrl, port) {
   const watcherInfo = watch(entryPath, async () => {
     try {
       await loadApp();
-      logFramework('Reload successful', colors.green);
+      logFramework("Reload successful", colors.green);
     } catch (error) {
-      logFramework('Reload failed', colors.red);
+      logFramework("Reload failed", colors.red);
 
       if (error instanceof SyntaxError) {
-        console.error(`${colors.red}${colors.bright}SyntaxError:${colors.reset} ${error.message}`);
+        console.error(
+          `${colors.red}${colors.bright}SyntaxError:${colors.reset} ${error.message}`,
+        );
         if (error.stack) {
-          const stackLines = error.stack.split('\n').slice(1, 4);
-          console.error(colors.dim + stackLines.join('\n') + colors.reset);
+          const stackLines = error.stack.split("\n").slice(1, 4);
+          console.error(colors.dim + stackLines.join("\n") + colors.reset);
         }
       } else {
-        console.error(formatError(error, { method: 'reload' }));
+        console.error(formatError(error, { method: "reload" }));
       }
     }
   });
@@ -240,56 +255,63 @@ export async function startDevServer(entryUrl, port) {
   const server = createServer(async (req, res) => {
     // Fix #2: If app failed to load initially, return error
     if (!app) {
-      res.writeHead(503, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({
-        jsonrpc: '2.0',
-        error: {
-          code: -32000,
-          message: 'Server initialization failed - fix syntax errors and save to retry',
-        },
-        id: null,
-      }));
+      res.writeHead(503, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          jsonrpc: "2.0",
+          error: {
+            code: -32000,
+            message:
+              "Server initialization failed - fix syntax errors and save to retry",
+          },
+          id: null,
+        }),
+      );
       return;
     }
 
     // Only accept POST requests
-    if (req.method !== 'POST') {
-      res.writeHead(405, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({
-        jsonrpc: '2.0',
-        error: {
-          code: -32600,
-          message: 'Invalid Request - Only POST method is supported',
-        },
-        id: null,
-      }));
+    if (req.method !== "POST") {
+      res.writeHead(405, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          jsonrpc: "2.0",
+          error: {
+            code: -32600,
+            message: "Invalid Request - Only POST method is supported",
+          },
+          id: null,
+        }),
+      );
       return;
     }
 
     // Read request body (Fix #6: add timeout protection)
-    let body = '';
+    let body = "";
     let timedOut = false;
 
     const timeout = setTimeout(() => {
       timedOut = true;
       req.destroy();
-      res.writeHead(408, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({
-        jsonrpc: '2.0',
-        error: {
-          code: -32000,
-          message: 'Request timeout - body not received within 30s',
-        },
-        id: null,
-      }));
-      logFramework('Request timeout', colors.red);
+      res.writeHead(408, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          jsonrpc: "2.0",
+          error: {
+            code: -32000,
+            message: "Request timeout - body not received within 30s",
+          },
+          id: null,
+        }),
+      );
+      logFramework("Request timeout", colors.red);
     }, 30000);
 
-    req.on('data', chunk => {
+    req.on("data", (chunk) => {
       body += chunk.toString();
     });
 
-    req.on('end', async () => {
+    req.on("end", async () => {
       clearTimeout(timeout);
 
       if (timedOut) {
@@ -304,21 +326,26 @@ export async function startDevServer(entryUrl, port) {
         rpcRequest = JSON.parse(body);
       } catch (error) {
         // Fix #9: include body snippet in parse error
-        const bodySnippet = body.length > 100 ? body.substring(0, 100) + '...' : body;
+        const bodySnippet =
+          body.length > 100 ? body.substring(0, 100) + "..." : body;
 
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-          jsonrpc: '2.0',
-          error: {
-            code: -32700,
-            message: `Parse error - Invalid JSON: ${error.message}`,
-            data: { bodySnippet },
-          },
-          id: null,
-        }));
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            jsonrpc: "2.0",
+            error: {
+              code: -32700,
+              message: `Parse error - Invalid JSON: ${error.message}`,
+              data: { bodySnippet },
+            },
+            id: null,
+          }),
+        );
 
         log(`${colors.red}✗${colors.reset} Parse error`, colors.red);
-        console.error(`${colors.dim}Body snippet: ${bodySnippet}${colors.reset}`);
+        console.error(
+          `${colors.dim}Body snippet: ${bodySnippet}${colors.reset}`,
+        );
         return;
       }
 
@@ -327,7 +354,11 @@ export async function startDevServer(entryUrl, port) {
       log(`${colors.cyan}→${colors.reset} ${methodDisplay}`, colors.dim);
 
       // Verbose logging: log full request body (skip initialize/initialized)
-      if (isVerbose && rpcRequest.method !== 'initialize' && rpcRequest.method !== 'initialized') {
+      if (
+        isVerbose &&
+        rpcRequest.method !== "initialize" &&
+        rpcRequest.method !== "initialized"
+      ) {
         console.log(`${colors.dim}[verbose] Request:${colors.reset}`);
         console.log(JSON.stringify(rpcRequest, null, 2));
       }
@@ -342,27 +373,30 @@ export async function startDevServer(entryUrl, port) {
           if (initResponse._notification === true) {
             res.writeHead(204);
             res.end();
-            log(`${colors.green}←${colors.reset} 204 (${elapsed}ms)`, colors.dim);
+            log(
+              `${colors.green}←${colors.reset} 204 (${elapsed}ms)`,
+              colors.dim,
+            );
             return;
           }
 
           // Fix #5: Include app capabilities if available
-          if (rpcRequest.method === 'initialize' && app) {
+          if (rpcRequest.method === "initialize" && app) {
             const capabilities = initResponse.result.capabilities;
 
             // Merge app capabilities if exposed
-            if (app.tools && typeof app.tools.list === 'function') {
+            if (app.tools && typeof app.tools.list === "function") {
               capabilities.tools = app.tools.capabilities || {};
             }
-            if (app.resources && typeof app.resources.list === 'function') {
+            if (app.resources && typeof app.resources.list === "function") {
               capabilities.resources = app.resources.capabilities || {};
             }
-            if (app.prompts && typeof app.prompts.list === 'function') {
+            if (app.prompts && typeof app.prompts.list === "function") {
               capabilities.prompts = app.prompts.capabilities || {};
             }
           }
 
-          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.writeHead(200, { "Content-Type": "application/json" });
           res.end(JSON.stringify(initResponse));
           log(`${colors.green}←${colors.reset} 200 (${elapsed}ms)`, colors.dim);
           return;
@@ -379,15 +413,23 @@ export async function startDevServer(entryUrl, port) {
         const statusCode = response.status;
 
         // Send response
-        res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+        res.writeHead(statusCode, { "Content-Type": "application/json" });
         res.end(responseText);
 
         // Log response
-        const statusColor = statusCode >= 200 && statusCode < 300 ? colors.green : colors.red;
-        log(`${statusColor}←${colors.reset} ${statusCode} (${elapsed}ms)`, colors.dim);
+        const statusColor =
+          statusCode >= 200 && statusCode < 300 ? colors.green : colors.red;
+        log(
+          `${statusColor}←${colors.reset} ${statusCode} (${elapsed}ms)`,
+          colors.dim,
+        );
 
         // Verbose logging: log full response body (skip initialize/initialized)
-        if (isVerbose && rpcRequest.method !== 'initialize' && rpcRequest.method !== 'initialized') {
+        if (
+          isVerbose &&
+          rpcRequest.method !== "initialize" &&
+          rpcRequest.method !== "initialized"
+        ) {
           console.log(`${colors.dim}[verbose] Response:${colors.reset}`);
           try {
             const responseJson = JSON.parse(responseText);
@@ -398,9 +440,12 @@ export async function startDevServer(entryUrl, port) {
         }
 
         // Slow tool warning: if tools/call took >1000ms
-        if (rpcRequest.method === 'tools/call' && elapsed > 1000) {
-          const toolName = rpcRequest.params?.name || 'unknown';
-          log(`${colors.yellow}⚠️  Slow tool: ${toolName} took ${elapsed}ms${colors.reset}`, colors.yellow);
+        if (rpcRequest.method === "tools/call" && elapsed > 1000) {
+          const toolName = rpcRequest.params?.name || "unknown";
+          log(
+            `${colors.yellow}⚠️  Slow tool: ${toolName} took ${elapsed}ms${colors.reset}`,
+            colors.yellow,
+          );
         }
 
         // If error, show details
@@ -408,29 +453,32 @@ export async function startDevServer(entryUrl, port) {
           try {
             const errorResponse = JSON.parse(responseText);
             if (errorResponse.error) {
-              console.error(formatError(
-                new Error(errorResponse.error.message || 'Unknown error'),
-                rpcRequest
-              ));
+              console.error(
+                formatError(
+                  new Error(errorResponse.error.message || "Unknown error"),
+                  rpcRequest,
+                ),
+              );
             }
           } catch {
             // Ignore parse errors
           }
         }
-
       } catch (error) {
         const elapsed = Date.now() - startTime;
 
         // Return error response
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-          jsonrpc: '2.0',
-          error: {
-            code: -32603,
-            message: error.message || 'Internal error',
-          },
-          id: rpcRequest.id || null,
-        }));
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            jsonrpc: "2.0",
+            error: {
+              code: -32603,
+              message: error.message || "Internal error",
+            },
+            id: rpcRequest.id || null,
+          }),
+        );
 
         log(`${colors.red}←${colors.reset} error (${elapsed}ms)`, colors.red);
         console.error(formatError(error, rpcRequest));
@@ -439,8 +487,8 @@ export async function startDevServer(entryUrl, port) {
   });
 
   // Fix #1: Handle EADDRINUSE port conflicts
-  server.on('error', (error) => {
-    if (error.code === 'EADDRINUSE') {
+  server.on("error", (error) => {
+    if (error.code === "EADDRINUSE") {
       // Propagate to CLI for proper error handling
       throw error;
     } else {
@@ -455,8 +503,11 @@ export async function startDevServer(entryUrl, port) {
 
     // Format watched directories for display
     const watchedDirsDisplay = watcherInfo.watchedDirs
-      .map(({ path, recursive }) => `  ${colors.dim}${path}${recursive ? ' (recursive)' : ''}${colors.reset}`)
-      .join('\n');
+      .map(
+        ({ path, recursive }) =>
+          `  ${colors.dim}${path}${recursive ? " (recursive)" : ""}${colors.reset}`,
+      )
+      .join("\n");
 
     console.log(`
 ${colors.bright}${colors.cyan}🔧 mctx dev server running at http://localhost:${port}${colors.reset}
@@ -482,14 +533,14 @@ ${watchedDirsDisplay}
   });
 
   // Handle graceful shutdown
-  process.on('SIGINT', () => {
+  process.on("SIGINT", () => {
     console.log(`\n${colors.dim}Shutting down...${colors.reset}`);
     server.close(() => {
       process.exit(0);
     });
   });
 
-  process.on('SIGTERM', () => {
+  process.on("SIGTERM", () => {
     server.close(() => {
       process.exit(0);
     });

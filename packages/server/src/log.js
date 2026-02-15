@@ -13,13 +13,13 @@
  */
 const LEVELS = {
   emergency: 0, // System is unusable
-  alert: 1,     // Action must be taken immediately
-  critical: 2,  // Critical conditions
-  error: 3,     // Error conditions
-  warning: 4,   // Warning conditions
-  notice: 5,    // Normal but significant condition
-  info: 6,      // Informational messages
-  debug: 7,     // Debug-level messages
+  alert: 1, // Action must be taken immediately
+  critical: 2, // Critical conditions
+  error: 3, // Error conditions
+  warning: 4, // Warning conditions
+  notice: 5, // Normal but significant condition
+  info: 6, // Informational messages
+  debug: 7, // Debug-level messages
 };
 
 /**
@@ -38,7 +38,7 @@ let logBuffer = [];
  * Current minimum log level (messages below this are filtered)
  * @private
  */
-let currentLogLevel = 'debug'; // Default: log everything
+let currentLogLevel = "debug"; // Default: log everything
 
 /**
  * Creates a log notification object
@@ -54,7 +54,7 @@ function createLogNotification(level, data) {
   }
 
   const notification = {
-    type: 'log',
+    type: "log",
     level,
     data,
   };
@@ -109,7 +109,7 @@ export function shouldLog(messageLevel, clientLevel) {
 export function setLogLevel(level) {
   if (LEVELS[level] === undefined) {
     throw new Error(
-      `Invalid log level: "${level}". Must be one of: ${Object.keys(LEVELS).join(', ')}`
+      `Invalid log level: "${level}". Must be one of: ${Object.keys(LEVELS).join(", ")}`,
     );
   }
   currentLogLevel = level;
@@ -152,7 +152,7 @@ export const log = {
    * Used for detailed debugging information
    */
   debug(data) {
-    return createLogNotification('debug', data);
+    return createLogNotification("debug", data);
   },
 
   /**
@@ -160,7 +160,7 @@ export const log = {
    * Used for general informational messages
    */
   info(data) {
-    return createLogNotification('info', data);
+    return createLogNotification("info", data);
   },
 
   /**
@@ -168,7 +168,7 @@ export const log = {
    * Used for important events that are not errors
    */
   notice(data) {
-    return createLogNotification('notice', data);
+    return createLogNotification("notice", data);
   },
 
   /**
@@ -176,7 +176,7 @@ export const log = {
    * Used for warnings that don't prevent operation
    */
   warning(data) {
-    return createLogNotification('warning', data);
+    return createLogNotification("warning", data);
   },
 
   /**
@@ -184,7 +184,7 @@ export const log = {
    * Used for errors that affect functionality
    */
   error(data) {
-    return createLogNotification('error', data);
+    return createLogNotification("error", data);
   },
 
   /**
@@ -192,7 +192,7 @@ export const log = {
    * Used for critical conditions that require immediate attention
    */
   critical(data) {
-    return createLogNotification('critical', data);
+    return createLogNotification("critical", data);
   },
 
   /**
@@ -200,7 +200,7 @@ export const log = {
    * Used for conditions requiring immediate operator intervention
    */
   alert(data) {
-    return createLogNotification('alert', data);
+    return createLogNotification("alert", data);
   },
 
   /**
@@ -208,6 +208,6 @@ export const log = {
    * Used for system-wide failures
    */
   emergency(data) {
-    return createLogNotification('emergency', data);
+    return createLogNotification("emergency", data);
   },
 };

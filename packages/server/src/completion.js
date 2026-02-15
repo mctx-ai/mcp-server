@@ -60,7 +60,7 @@ const MAX_COMPLETIONS = 100;
  */
 export function generateCompletions(registeredItems, ref, argumentValue) {
   // Validate inputs
-  if (!registeredItems || typeof registeredItems !== 'object') {
+  if (!registeredItems || typeof registeredItems !== "object") {
     return createEmptyCompletion();
   }
 
@@ -68,15 +68,19 @@ export function generateCompletions(registeredItems, ref, argumentValue) {
     return createEmptyCompletion();
   }
 
-  const partialValue = argumentValue || '';
+  const partialValue = argumentValue || "";
 
   // Handle prompt argument completion
-  if (ref.type === 'ref/prompt-argument') {
-    return generatePromptArgumentCompletions(registeredItems, ref, partialValue);
+  if (ref.type === "ref/prompt-argument") {
+    return generatePromptArgumentCompletions(
+      registeredItems,
+      ref,
+      partialValue,
+    );
   }
 
   // Handle resource completion
-  if (ref.type === 'ref/resource') {
+  if (ref.type === "ref/resource") {
     return generateResourceCompletions(registeredItems, ref, partialValue);
   }
 
@@ -96,8 +100,12 @@ function generatePromptArgumentCompletions(registeredItems, ref, partialValue) {
   if (!prompt) return createEmptyCompletion();
 
   // Check for custom completion handler
-  if (typeof prompt.complete === 'function') {
-    return executeCustomCompletion(prompt.complete, ref.argumentName, partialValue);
+  if (typeof prompt.complete === "function") {
+    return executeCustomCompletion(
+      prompt.complete,
+      ref.argumentName,
+      partialValue,
+    );
   }
 
   // Auto-generate from T.enum values if available
@@ -123,7 +131,7 @@ function generateResourceCompletions(registeredItems, ref, partialValue) {
   if (!resource) return createEmptyCompletion();
 
   // Check for custom completion handler
-  if (typeof resource.complete === 'function') {
+  if (typeof resource.complete === "function") {
     return executeCustomCompletion(resource.complete, null, partialValue);
   }
 
@@ -144,7 +152,9 @@ function executeCustomCompletion(completeFn, argumentName, partialValue) {
 
     // Async completion handlers are not supported
     if (result instanceof Promise) {
-      throw new Error('Async completion handlers are not supported. Use synchronous handlers for fn.complete.');
+      throw new Error(
+        "Async completion handlers are not supported. Use synchronous handlers for fn.complete.",
+      );
     }
 
     // Filter and cap the results
@@ -154,7 +164,7 @@ function executeCustomCompletion(completeFn, argumentName, partialValue) {
 
     return createEmptyCompletion();
   } catch (error) {
-    console.error('Completion handler error:', error);
+    console.error("Completion handler error:", error);
     return createEmptyCompletion();
   }
 }
@@ -173,8 +183,8 @@ function filterAndCap(values, partialValue) {
 
   // Filter values that start with partial input (case-insensitive)
   const lowerPartial = partialValue.toLowerCase();
-  const filtered = values.filter(value => {
-    if (typeof value !== 'string') return false;
+  const filtered = values.filter((value) => {
+    if (typeof value !== "string") return false;
     return value.toLowerCase().startsWith(lowerPartial);
   });
 
