@@ -32,7 +32,8 @@ const packageJson = {
   main: "dist/index.js",
   scripts: {
     dev: "npx mctx-dev index.js",
-    build: "esbuild index.js --bundle --platform=node --format=esm --outfile=dist/index.js",
+    build:
+      "esbuild index.js --bundle --platform=node --format=esm --outfile=dist/index.js",
   },
   dependencies: {
     "@mctx-ai/mcp-server": `^${version}`,

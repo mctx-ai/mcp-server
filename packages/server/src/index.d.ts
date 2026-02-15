@@ -187,7 +187,10 @@ export type ToolHandler = {
  * ```
  */
 export type GeneratorToolHandler = {
-  (args: Record<string, any>, ask?: AskFunction | null): Generator<any, any, any> | AsyncGenerator<any, any, any>;
+  (
+    args: Record<string, any>,
+    ask?: AskFunction | null,
+  ): Generator<any, any, any> | AsyncGenerator<any, any, any>;
   description?: string;
   input?: Record<string, SchemaDefinition>;
   mimeType?: string;
@@ -202,7 +205,10 @@ export type GeneratorToolHandler = {
  * @returns Resource content
  */
 export type ResourceHandler = {
-  (params: Record<string, string>, ask?: AskFunction | null): any | Promise<any>;
+  (
+    params: Record<string, string>,
+    ask?: AskFunction | null,
+  ): any | Promise<any>;
   /** Resource name for display */
   name?: string;
   /** Resource description */
@@ -220,7 +226,14 @@ export type ResourceHandler = {
  * @returns Prompt messages (string, conversation result, or message array)
  */
 export type PromptHandler = {
-  (args: Record<string, any>, ask?: AskFunction | null): string | ConversationResult | Message[] | Promise<string | ConversationResult | Message[]>;
+  (
+    args: Record<string, any>,
+    ask?: AskFunction | null,
+  ):
+    | string
+    | ConversationResult
+    | Message[]
+    | Promise<string | ConversationResult | Message[]>;
   /** Prompt description */
   description?: string;
   /** Input schema definition using T types */
@@ -291,7 +304,7 @@ export interface SamplingOptions {
  * Represents a JSON Schema property with optional metadata.
  */
 export interface SchemaDefinition {
-  type: 'string' | 'number' | 'boolean' | 'array' | 'object';
+  type: "string" | "number" | "boolean" | "array" | "object";
   description?: string;
   enum?: any[];
   default?: any;
@@ -477,7 +490,7 @@ export const T: {
  * ```
  */
 export function buildInputSchema(input?: Record<string, SchemaDefinition>): {
-  type: 'object';
+  type: "object";
   properties: Record<string, SchemaDefinition>;
   required?: string[];
 };
@@ -491,7 +504,7 @@ export function buildInputSchema(input?: Record<string, SchemaDefinition>): {
  */
 export interface Message {
   /** Message role */
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   /** Message content */
   content: TextContent | ImageContent | ResourceContent;
 }
@@ -500,7 +513,7 @@ export interface Message {
  * Text content type.
  */
 export interface TextContent {
-  type: 'text';
+  type: "text";
   text: string;
 }
 
@@ -508,7 +521,7 @@ export interface TextContent {
  * Image content type (base64-encoded).
  */
 export interface ImageContent {
-  type: 'image';
+  type: "image";
   data: string;
   mimeType: string;
 }
@@ -517,7 +530,7 @@ export interface ImageContent {
  * Resource content type (embedded resource).
  */
 export interface ResourceContent {
-  type: 'resource';
+  type: "resource";
   resource: {
     uri: string;
     text: string;
@@ -588,7 +601,7 @@ export interface ConversationHelpers {
  * ```
  */
 export function conversation(
-  builderFn: (helpers: ConversationHelpers) => Message[]
+  builderFn: (helpers: ConversationHelpers) => Message[],
 ): ConversationResult;
 
 // ============================================================================
@@ -600,7 +613,7 @@ export function conversation(
  * Yielded by generator tools to report progress.
  */
 export interface ProgressNotification {
-  type: 'progress';
+  type: "progress";
   /** Current step number (1-indexed) */
   progress: number;
   /** Total steps (optional, for determinate progress) */
@@ -666,7 +679,15 @@ export const PROGRESS_DEFAULTS: {
 /**
  * Log severity level (RFC 5424).
  */
-export type LogLevel = 'debug' | 'info' | 'notice' | 'warning' | 'error' | 'critical' | 'alert' | 'emergency';
+export type LogLevel =
+  | "debug"
+  | "info"
+  | "notice"
+  | "warning"
+  | "error"
+  | "critical"
+  | "alert"
+  | "emergency";
 
 /**
  * Log object with methods for each severity level.
