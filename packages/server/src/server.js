@@ -132,9 +132,13 @@ function paginate(items, cursor, pageSize = 50) {
 
 /**
  * Create MCP server instance
+ * @param {Object} [options] - Server configuration options
+ * @param {string} [options.instructions] - Server instructions for LLM clients
  * @returns {Object} Server app with registration methods and fetch handler
  */
-export function createServer() {
+export function createServer(options = {}) {
+  const { instructions } = options;
+
   // Internal registries
   const tools = new Map();
   const resources = new Map();
@@ -679,6 +683,55 @@ export function createServer() {
   }
 
   /**
+   * Handle initialize request
+   * Auto-detects capabilities from registered tools/resources/prompts
+   * @param {Object} _params - Initialize params (clientInfo, etc.)
+   * @returns {Object} Server capabilities and info
+   */
+  function handleInitialize(_params) {
+    // Build capabilities object by detecting what's registered
+    const capabilities = {};
+
+    // Add tools capability if any tools are registered
+    if (tools.size > 0) {
+      capabilities.tools = {};
+    }
+
+    // Add resources capability if any resources are registered
+    if (resources.size > 0) {
+      capabilities.resources = {
+        subscribe: false, // Resource subscriptions not supported yet
+        listChanged: false, // Resource change notifications not supported yet
+      };
+    }
+
+    // Add prompts capability if any prompts are registered
+    if (prompts.size > 0) {
+      capabilities.prompts = {};
+    }
+
+    // Always include logging capability
+    capabilities.logging = {};
+
+    // Build response
+    const response = {
+      protocolVersion: "2024-11-05",
+      capabilities,
+      serverInfo: {
+        name: "@mctx-ai/mcp-server",
+        version: "0.3.0",
+      },
+    };
+
+    // Include instructions if provided
+    if (instructions) {
+      response.instructions = instructions;
+    }
+
+    return response;
+  }
+
+  /**
    * Route JSON-RPC request to appropriate handler
    * @param {Object} request - JSON-RPC request
    * @returns {Promise<Object>} Response result
@@ -687,6 +740,17 @@ export function createServer() {
     const { method, params, _meta } = request;
 
     switch (method) {
+      case "initialize":
+        return handleInitialize(params);
+
+      case "initialized":
+        // Notification - no response needed
+        return null;
+
+      case "ping":
+        // Respond to ping with empty result
+        return {};
+
       case "tools/list":
         return handleToolsList(params);
 

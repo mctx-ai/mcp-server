@@ -126,5 +126,12 @@ jobs:
           cd test-project
           test -f package.json
           test -f index.js
-          test -f mctx.json
           test -f .gitignore
+
+          # Validate package.json has required fields
+          node -e "const pkg = require('./package.json'); \
+            if (!pkg.name) throw new Error('Missing name field'); \
+            if (!pkg.version) throw new Error('Missing version field'); \
+            if (!pkg.description) throw new Error('Missing description field'); \
+            if (!pkg.main) throw new Error('Missing main field'); \
+            console.log('✓ package.json validation passed');"

@@ -27,17 +27,19 @@ mkdirSync(projectName, { recursive: true });
 const packageJson = {
   name: projectName,
   version: "0.0.1",
+  description: "An MCP server built with @mctx-ai/mcp-server",
   type: "module",
+  main: "dist/index.js",
   scripts: {
     dev: "npx mctx-dev index.js",
-    build:
-      "node --experimental-sea-config sea-config.json || echo 'Build step placeholder'",
+    build: "esbuild index.js --bundle --platform=node --format=esm --outfile=dist/index.js",
   },
   dependencies: {
     "@mctx-ai/mcp-server": `^${version}`,
   },
   devDependencies: {
     "@mctx-ai/mcp-dev": `^${version}`,
+    esbuild: "^0.20.0",
   },
 };
 
@@ -49,7 +51,9 @@ writeFileSync(
 // Generate index.js
 const indexJs = `import { createServer, T } from '@mctx-ai/mcp-server';
 
-const app = createServer();
+const app = createServer({
+  instructions: 'This server provides a simple greeting tool. Use the greet tool to say hello to someone by name.',
+});
 
 // A simple greeting tool
 function greet({ name }) {
@@ -67,17 +71,6 @@ export default app;
 `;
 
 writeFileSync(join(projectName, "index.js"), indexJs);
-
-// Generate mctx.json
-const mctxJson = {
-  name: projectName,
-  entrypoint: "index.js",
-};
-
-writeFileSync(
-  join(projectName, "mctx.json"),
-  JSON.stringify(mctxJson, null, 2) + "\n",
-);
 
 // Generate .gitignore
 const gitignore = `node_modules/
@@ -111,11 +104,19 @@ myTool.input = {
 app.tool('my-tool', myTool);
 \`\`\`
 
+## Build
+
+\`\`\`bash
+npm run build
+\`\`\`
+
+This bundles your server into a single \`dist/index.js\` file ready for deployment.
+
 ## Deploy
 
 1. Push to GitHub
 2. Connect your repo at [mctx.ai](https://mctx.ai)
-3. Deploy — mctx reads \`mctx.json\` and runs your server
+3. Deploy — mctx reads \`package.json\` and runs your server
 
 ## Learn More
 

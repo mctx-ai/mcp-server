@@ -49,52 +49,6 @@ function logFramework(message, color = colors.reset) {
 }
 
 /**
- * Handle MCP initialize handshake
- * This is normally handled by the MCP client (Claude Desktop), but we need to
- * handle it locally for development.
- */
-function handleInitialize(rpcRequest) {
-  const { method, params = {} } = rpcRequest;
-
-  if (method === "initialize") {
-    // Respond with server capabilities
-    return {
-      jsonrpc: "2.0",
-      id: rpcRequest.id,
-      result: {
-        protocolVersion: "2024-11-05",
-        capabilities: {
-          tools: {},
-          resources: {},
-          prompts: {},
-          logging: {},
-        },
-        serverInfo: {
-          name: "mctx-dev",
-          version: "0.1.0",
-        },
-      },
-    };
-  }
-
-  if (method === "initialized") {
-    // Fix #3: Return special marker for notifications (no response per JSON-RPC 2.0)
-    return { _notification: true };
-  }
-
-  if (method === "ping") {
-    // Respond to ping
-    return {
-      jsonrpc: "2.0",
-      id: rpcRequest.id,
-      result: {},
-    };
-  }
-
-  return null;
-}
-
-/**
  * Extract method name and arguments for logging
  */
 function formatMethod(rpcRequest) {
@@ -364,45 +318,8 @@ export async function startDevServer(entryUrl, port) {
       }
 
       try {
-        // Handle initialize handshake locally
-        const initResponse = handleInitialize(rpcRequest);
-        if (initResponse !== null) {
-          const elapsed = Date.now() - startTime;
-
-          // Fix #3: For notifications (initialized), send 204 No Content
-          if (initResponse._notification === true) {
-            res.writeHead(204);
-            res.end();
-            log(
-              `${colors.green}←${colors.reset} 204 (${elapsed}ms)`,
-              colors.dim,
-            );
-            return;
-          }
-
-          // Fix #5: Include app capabilities if available
-          if (rpcRequest.method === "initialize" && app) {
-            const capabilities = initResponse.result.capabilities;
-
-            // Merge app capabilities if exposed
-            if (app.tools && typeof app.tools.list === "function") {
-              capabilities.tools = app.tools.capabilities || {};
-            }
-            if (app.resources && typeof app.resources.list === "function") {
-              capabilities.resources = app.resources.capabilities || {};
-            }
-            if (app.prompts && typeof app.prompts.list === "function") {
-              capabilities.prompts = app.prompts.capabilities || {};
-            }
-          }
-
-          res.writeHead(200, { "Content-Type": "application/json" });
-          res.end(JSON.stringify(initResponse));
-          log(`${colors.green}←${colors.reset} 200 (${elapsed}ms)`, colors.dim);
-          return;
-        }
-
-        // Delegate to app's fetch handler
+        // Delegate all requests to app's fetch handler (including initialize)
+        // The core SDK now handles initialize, initialized, and ping
         const request = createRequest(rpcRequest);
         const response = await app.fetch(request, {}, {});
 
