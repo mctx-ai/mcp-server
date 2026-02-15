@@ -127,7 +127,6 @@ jobs:
           mkdir -p /tmp/smoke-test-dev
           cd /tmp/smoke-test-dev
           npm init -y
-          npm install $GITHUB_WORKSPACE/packages/server/mctx-ai-mcp-server-*.tgz
           npm install $GITHUB_WORKSPACE/packages/dev/mctx-ai-mcp-dev-*.tgz
           node -e "import('@mctx-ai/mcp-dev').then(() => console.log('✓ @mctx-ai/mcp-dev import successful')).catch(e => { console.error('✗ Import failed:', e); process.exit(1); })"
 
@@ -159,14 +158,11 @@ jobs:
           cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 # v4.1.4
-        with:
-          name: build-artifacts
-          path: packages
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm run build
 
       - name: Dry run (prereleases) - @mctx-ai/mcp-server
         if: github.event.release.prerelease == true
@@ -186,6 +182,17 @@ jobs:
 
       - name: Publish @mctx-ai/mcp-dev
         working-directory: packages/dev
+        run: pnpm publish --provenance --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Dry run (prereleases) - create-mctx-server
+        if: github.event.release.prerelease == true
+        working-directory: packages/create-mctx-server
+        run: pnpm publish --dry-run
+
+      - name: Publish create-mctx-server
+        working-directory: packages/create-mctx-server
         run: pnpm publish --provenance --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

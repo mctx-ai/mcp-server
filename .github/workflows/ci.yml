@@ -39,7 +39,7 @@ jobs:
         run: pnpm run format:check
 
       - name: Type check
-        run: pnpm --filter @mctx-ai/mcp-server exec tsc --noEmit || true
+        run: pnpm --filter @mctx-ai/mcp-server run typecheck
 
       - name: Validate workspaces
         run: pnpm list --recursive 2>&1 | (! grep -q "UNMET") || echo "Warning: unmet workspace dependencies"
