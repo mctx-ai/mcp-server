@@ -127,13 +127,13 @@ app.prompt("debug", debug);
 
 The `T` object builds JSON Schema definitions for tool and prompt inputs.
 
-| Type | Example | Key Options |
-|------|---------|-------------|
-| `T.string()` | `T.string({ required: true })` | `enum`, `minLength`, `maxLength`, `pattern`, `format` |
-| `T.number()` | `T.number({ min: 0, max: 100 })` | `min`, `max`, `enum` |
-| `T.boolean()` | `T.boolean({ default: false })` | `default` |
-| `T.array()` | `T.array({ items: T.string() })` | `items` |
-| `T.object()` | `T.object({ properties: { ... } })` | `properties`, `additionalProperties` |
+| Type          | Example                             | Key Options                                           |
+| ------------- | ----------------------------------- | ----------------------------------------------------- |
+| `T.string()`  | `T.string({ required: true })`      | `enum`, `minLength`, `maxLength`, `pattern`, `format` |
+| `T.number()`  | `T.number({ min: 0, max: 100 })`    | `min`, `max`, `enum`                                  |
+| `T.boolean()` | `T.boolean({ default: false })`     | `default`                                             |
+| `T.array()`   | `T.array({ items: T.string() })`    | `items`                                               |
+| `T.object()`  | `T.object({ properties: { ... } })` | `properties`, `additionalProperties`                  |
 
 All types accept `required`, `description`, and `default`.
 
