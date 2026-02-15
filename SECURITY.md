@@ -2,9 +2,26 @@
 
 ## Reporting a Vulnerability
 
-Email security@mctx.ai with details. We will acknowledge within 48 hours and aim to resolve issues within 30 days.
+I take security seriously and appreciate your help protecting this project.
 
-Do not file public issues for security concerns.
+### Primary: GitHub Security Advisory (Recommended)
+
+The easiest and most secure way to report a vulnerability is using GitHub's built-in private reporting feature:
+
+1. Go to the [Security tab](https://github.com/mctx-ai/mcp-server/security) of this repository
+2. Click **"Report a vulnerability"** button
+3. Fill out the form with vulnerability details
+4. Submit your report
+
+Alternatively, you can [report directly here](https://github.com/mctx-ai/mcp-server/security/advisories/new).
+
+### Fallback: Email
+
+If GitHub's reporting feature isn't an option for you, email security@mctx.ai with details. I'll do my best to respond as quickly as possible and work with you on a fix.
+
+### After Reporting
+
+Please do not file public issues or pull requests for security concerns until we've had a chance to address them. Once the vulnerability is patched, I'll coordinate disclosure and credit you for the report.
 
 ## Supported Versions
 

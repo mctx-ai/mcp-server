@@ -1,6 +1,6 @@
 # Contributing to @mctx-ai/mcp-server
 
-Thank you for your interest in contributing! We welcome contributions from the community.
+Thank you for your interest in contributing! I welcome contributions from the community.
 
 ## Development Setup
 
@@ -80,9 +80,9 @@ docs: update quick start example
    - Ensure CI checks pass
 
 5. **Code review:**
-   - Maintainers will review your PR
+   - I'll review your PR when I can
    - Address any feedback or requested changes
-   - Once approved, your PR will be merged
+   - Once approved, I'll merge it
 
 ## Developer Certificate of Origin (DCO)
 
@@ -100,10 +100,10 @@ Signed-off-by: Your Name <your.email@example.com>
 
 ## Questions?
 
-If you have questions or need help, feel free to:
+If you have questions or need help:
 
-- Open an issue for discussion
+- **Open a GitHub issue** - This is the best way to get help or discuss ideas
 - Ask in pull request comments
 - Check the documentation at https://docs.mctx.ai
 
-We appreciate your contributions!
+I appreciate your contributions!
