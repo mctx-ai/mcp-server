@@ -42,7 +42,8 @@ jobs:
         run: pnpm --filter @mctx-ai/mcp-server run typecheck
 
       - name: Validate workspaces
-        run: pnpm list --recursive 2>&1 | (! grep -q "UNMET") || echo "Warning: unmet workspace dependencies"
+        run: |
+          pnpm list --recursive 2>&1 | grep -q "UNMET" && echo "Warning: unmet workspace dependencies" || true
 
   test:
     name: Test (Node ${{ matrix.node }} / ${{ matrix.os }})
