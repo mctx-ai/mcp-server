@@ -456,11 +456,12 @@ export function createServer(options = {}) {
       handler = resources.get(normalizedUri);
     } else {
       // Try template matching using uri.js module
-      // Canonicalize registered URIs for consistent matching
       for (const [registeredUri, h] of resources.entries()) {
-        // Canonicalize the registered URI for comparison
-        // This ensures consistent matching regardless of registration format
-        const normalizedRegisteredUri = canonicalizePath(registeredUri);
+        // Normalize registered URI for consistent matching (slash deduplication only)
+        // Don't apply security validation to developer-provided templates
+        const normalizedRegisteredUri = registeredUri
+          .replace(/\\/g, "/") // Convert backslashes to forward slashes
+          .replace(/\/+/g, "/"); // Remove duplicate slashes
         const match = matchUri(normalizedRegisteredUri, normalizedUri);
         if (match) {
           handler = h;
