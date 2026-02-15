@@ -3,9 +3,7 @@ import { mkdirSync, writeFileSync, existsSync, readFileSync } from "fs";
 import { join } from "path";
 
 // Read version from own package.json
-const selfPkg = JSON.parse(
-  readFileSync(new URL("./package.json", import.meta.url), "utf8"),
-);
+const selfPkg = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8"));
 const version = selfPkg.version;
 
 const projectName = process.argv[2];
@@ -32,8 +30,7 @@ const packageJson = {
   main: "dist/index.js",
   scripts: {
     dev: "npx mctx-dev index.js",
-    build:
-      "esbuild index.js --bundle --platform=node --format=esm --outfile=dist/index.js",
+    build: "esbuild index.js --bundle --platform=node --format=esm --outfile=dist/index.js",
   },
   dependencies: {
     "@mctx-ai/mcp-server": `^${version}`,
@@ -44,10 +41,7 @@ const packageJson = {
   },
 };
 
-writeFileSync(
-  join(projectName, "package.json"),
-  JSON.stringify(packageJson, null, 2) + "\n",
-);
+writeFileSync(join(projectName, "package.json"), JSON.stringify(packageJson, null, 2) + "\n");
 
 // Generate index.js
 const indexJs = `import { createServer, T } from '@mctx-ai/mcp-server';

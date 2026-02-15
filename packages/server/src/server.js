@@ -77,8 +77,7 @@ function safeSerialize(value) {
 function sanitizeError(error) {
   // Determine if we're in production mode
   // Check NODE_ENV or default to production (fail secure)
-  const isProduction =
-    !process.env.NODE_ENV || process.env.NODE_ENV === "production";
+  const isProduction = !process.env.NODE_ENV || process.env.NODE_ENV === "production";
 
   return securitySanitizeError(error, isProduction);
 }
@@ -255,8 +254,7 @@ export function createServer(options = {}) {
       function isGeneratorFunction(fn) {
         if (!fn || !fn.constructor) return false;
         const name = fn.constructor.name;
-        if (name === "GeneratorFunction" || name === "AsyncGeneratorFunction")
-          return true;
+        if (name === "GeneratorFunction" || name === "AsyncGeneratorFunction") return true;
         const proto = Object.getPrototypeOf(fn);
         return proto && proto[Symbol.toStringTag] === "GeneratorFunction";
       }
@@ -323,9 +321,7 @@ export function createServer(options = {}) {
 
         // Enforce max yields guardrail
         if (yieldCount > PROGRESS_DEFAULTS.maxYields) {
-          throw new Error(
-            `Generator exceeded maximum yields (${PROGRESS_DEFAULTS.maxYields})`,
-          );
+          throw new Error(`Generator exceeded maximum yields (${PROGRESS_DEFAULTS.maxYields})`);
         }
 
         // Enforce max execution time guardrail
@@ -526,9 +522,7 @@ export function createServer(options = {}) {
         ],
       };
     } catch (error) {
-      throw new Error(
-        `Failed to read resource "${uri}": ${sanitizeError(error)}`,
-      );
+      throw new Error(`Failed to read resource "${uri}": ${sanitizeError(error)}`);
     }
   }
 
@@ -629,9 +623,7 @@ export function createServer(options = {}) {
         ],
       };
     } catch (error) {
-      throw new Error(
-        `Failed to get prompt "${name}": ${sanitizeError(error)}`,
-      );
+      throw new Error(`Failed to get prompt "${name}": ${sanitizeError(error)}`);
     }
   }
 
@@ -907,16 +899,13 @@ export function createServer(options = {}) {
       });
     } catch (error) {
       // Check if error is JSON-RPC error (has code and message)
-      const isJsonRpcError =
-        error && typeof error === "object" && "code" in error;
+      const isJsonRpcError = error && typeof error === "object" && "code" in error;
 
       const rpcError = isJsonRpcError
         ? error
         : {
             code: -32603,
-            message: sanitizeError(
-              error instanceof Error ? error : new Error(String(error)),
-            ),
+            message: sanitizeError(error instanceof Error ? error : new Error(String(error))),
           };
 
       return new Response(

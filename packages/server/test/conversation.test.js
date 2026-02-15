@@ -10,9 +10,7 @@ import { conversation } from "../src/conversation.js";
 describe("conversation()", () => {
   it("throws if not given a function", () => {
     expect(() => conversation()).toThrow(/requires a builder function/);
-    expect(() => conversation("not a function")).toThrow(
-      /requires a builder function/,
-    );
+    expect(() => conversation("not a function")).toThrow(/requires a builder function/);
     expect(() => conversation({})).toThrow(/requires a builder function/);
   });
 
@@ -32,9 +30,7 @@ describe("conversation()", () => {
 
 describe("user.say()", () => {
   it("creates user text message", () => {
-    const result = conversation(({ user }) => [
-      user.say("What's the weather?"),
-    ]);
+    const result = conversation(({ user }) => [user.say("What's the weather?")]);
 
     expect(result.messages).toEqual([
       {
@@ -146,9 +142,7 @@ describe("user.attach()", () => {
     }).not.toThrow();
 
     expect(() => {
-      conversation(({ user }) => [
-        user.attach("data", "application/vnd.api+json"),
-      ]);
+      conversation(({ user }) => [user.attach("data", "application/vnd.api+json")]);
     }).not.toThrow();
   });
 
@@ -177,9 +171,7 @@ describe("user.attach()", () => {
 
 describe("user.embed()", () => {
   it("creates resource message", () => {
-    const result = conversation(({ user }) => [
-      user.embed("db://customers/schema"),
-    ]);
+    const result = conversation(({ user }) => [user.embed("db://customers/schema")]);
 
     expect(result.messages).toEqual([
       {
@@ -251,12 +243,7 @@ describe("conversation() - multi-turn dialogs", () => {
     ]);
 
     expect(result.messages).toHaveLength(4);
-    expect(result.messages.map((m) => m.role)).toEqual([
-      "user",
-      "assistant",
-      "user",
-      "assistant",
-    ]);
+    expect(result.messages.map((m) => m.role)).toEqual(["user", "assistant", "user", "assistant"]);
   });
 });
 
@@ -275,9 +262,7 @@ describe("conversation() - mixed content types", () => {
   });
 
   it("allows ai.attach() for image generation use cases", () => {
-    const result = conversation(({ ai }) => [
-      ai.attach("generatedimage", "image/png"),
-    ]);
+    const result = conversation(({ ai }) => [ai.attach("generatedimage", "image/png")]);
 
     expect(result.messages).toEqual([
       {
@@ -321,18 +306,14 @@ describe("conversation() - edge cases", () => {
   });
 
   it("handles multiline text", () => {
-    const result = conversation(({ user }) => [
-      user.say("Line 1\nLine 2\nLine 3"),
-    ]);
+    const result = conversation(({ user }) => [user.say("Line 1\nLine 2\nLine 3")]);
 
     expect(result.messages[0].content.text).toBe("Line 1\nLine 2\nLine 3");
   });
 
   it("handles special characters in text", () => {
     const result = conversation(({ user }) => [
-      user.say(
-        "Special chars: \"quotes\", 'apostrophes', <tags>, & ampersands",
-      ),
+      user.say("Special chars: \"quotes\", 'apostrophes', <tags>, & ampersands"),
     ]);
 
     expect(result.messages[0].content.text).toContain("Special chars");

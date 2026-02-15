@@ -34,9 +34,7 @@ function timestamp() {
  * Log with timestamp and color (Fix #8: separated framework vs request logs)
  */
 function log(message, color = colors.reset) {
-  console.log(
-    `${colors.gray}[${timestamp()}]${colors.reset} ${color}${message}${colors.reset}`,
-  );
+  console.log(`${colors.gray}[${timestamp()}]${colors.reset} ${color}${message}${colors.reset}`);
 }
 
 /**
@@ -141,15 +139,11 @@ export async function startDevServer(entryUrl, port) {
       app = appModule.default;
 
       if (!app) {
-        throw new Error(
-          "Entry file must have a default export (the app instance)",
-        );
+        throw new Error("Entry file must have a default export (the app instance)");
       }
 
       if (typeof app.fetch !== "function") {
-        throw new Error(
-          "App must have a fetch method (created via createServer())",
-        );
+        throw new Error("App must have a fetch method (created via createServer())");
       }
 
       return true;
@@ -166,17 +160,12 @@ export async function startDevServer(entryUrl, port) {
     logFramework(`Failed to load ${entryUrl.split("/").pop()}`, colors.red);
 
     if (error instanceof SyntaxError) {
-      console.error(
-        `${colors.red}${colors.bright}SyntaxError:${colors.reset} ${error.message}`,
-      );
+      console.error(`${colors.red}${colors.bright}SyntaxError:${colors.reset} ${error.message}`);
       if (error.stack) {
         const stackLines = error.stack.split("\n").slice(1, 4);
         console.error(colors.dim + stackLines.join("\n") + colors.reset);
       }
-      logFramework(
-        "Watching for changes... fix the error and save to retry.",
-        colors.yellow,
-      );
+      logFramework("Watching for changes... fix the error and save to retry.", colors.yellow);
     } else {
       console.error(formatError(error, { method: "initial-load" }));
     }
@@ -192,9 +181,7 @@ export async function startDevServer(entryUrl, port) {
       logFramework("Reload failed", colors.red);
 
       if (error instanceof SyntaxError) {
-        console.error(
-          `${colors.red}${colors.bright}SyntaxError:${colors.reset} ${error.message}`,
-        );
+        console.error(`${colors.red}${colors.bright}SyntaxError:${colors.reset} ${error.message}`);
         if (error.stack) {
           const stackLines = error.stack.split("\n").slice(1, 4);
           console.error(colors.dim + stackLines.join("\n") + colors.reset);
@@ -215,8 +202,7 @@ export async function startDevServer(entryUrl, port) {
           jsonrpc: "2.0",
           error: {
             code: -32000,
-            message:
-              "Server initialization failed - fix syntax errors and save to retry",
+            message: "Server initialization failed - fix syntax errors and save to retry",
           },
           id: null,
         }),
@@ -280,8 +266,7 @@ export async function startDevServer(entryUrl, port) {
         rpcRequest = JSON.parse(body);
       } catch (error) {
         // Fix #9: include body snippet in parse error
-        const bodySnippet =
-          body.length > 100 ? body.substring(0, 100) + "..." : body;
+        const bodySnippet = body.length > 100 ? body.substring(0, 100) + "..." : body;
 
         res.writeHead(400, { "Content-Type": "application/json" });
         res.end(
@@ -297,9 +282,7 @@ export async function startDevServer(entryUrl, port) {
         );
 
         log(`${colors.red}✗${colors.reset} Parse error`, colors.red);
-        console.error(
-          `${colors.dim}Body snippet: ${bodySnippet}${colors.reset}`,
-        );
+        console.error(`${colors.dim}Body snippet: ${bodySnippet}${colors.reset}`);
         return;
       }
 
@@ -308,11 +291,7 @@ export async function startDevServer(entryUrl, port) {
       log(`${colors.cyan}→${colors.reset} ${methodDisplay}`, colors.dim);
 
       // Verbose logging: log full request body (skip initialize/initialized)
-      if (
-        isVerbose &&
-        rpcRequest.method !== "initialize" &&
-        rpcRequest.method !== "initialized"
-      ) {
+      if (isVerbose && rpcRequest.method !== "initialize" && rpcRequest.method !== "initialized") {
         console.log(`${colors.dim}[verbose] Request:${colors.reset}`);
         console.log(JSON.stringify(rpcRequest, null, 2));
       }
@@ -334,12 +313,8 @@ export async function startDevServer(entryUrl, port) {
         res.end(responseText);
 
         // Log response
-        const statusColor =
-          statusCode >= 200 && statusCode < 300 ? colors.green : colors.red;
-        log(
-          `${statusColor}←${colors.reset} ${statusCode} (${elapsed}ms)`,
-          colors.dim,
-        );
+        const statusColor = statusCode >= 200 && statusCode < 300 ? colors.green : colors.red;
+        log(`${statusColor}←${colors.reset} ${statusCode} (${elapsed}ms)`, colors.dim);
 
         // Verbose logging: log full response body (skip initialize/initialized)
         if (
@@ -371,10 +346,7 @@ export async function startDevServer(entryUrl, port) {
             const errorResponse = JSON.parse(responseText);
             if (errorResponse.error) {
               console.error(
-                formatError(
-                  new Error(errorResponse.error.message || "Unknown error"),
-                  rpcRequest,
-                ),
+                formatError(new Error(errorResponse.error.message || "Unknown error"), rpcRequest),
               );
             }
           } catch {

@@ -19,8 +19,7 @@ import {
 describe("sanitizeError() - stack traces", () => {
   it("strips stack traces in production", () => {
     const error = new Error("Test error");
-    error.stack =
-      "Error: Test error\n    at Object.<anonymous> (/path/to/file.js:10:15)";
+    error.stack = "Error: Test error\n    at Object.<anonymous> (/path/to/file.js:10:15)";
 
     const sanitized = sanitizeError(error, true);
 
@@ -31,8 +30,7 @@ describe("sanitizeError() - stack traces", () => {
 
   it("preserves stack traces in development", () => {
     const error = new Error("Test error");
-    error.stack =
-      "Error: Test error\n    at Object.<anonymous> (/path/to/file.js:10:15)";
+    error.stack = "Error: Test error\n    at Object.<anonymous> (/path/to/file.js:10:15)";
 
     const sanitized = sanitizeError(error, false);
 
@@ -74,9 +72,7 @@ describe("sanitizeError() - AWS key redaction", () => {
   });
 
   it("redacts multiple AWS keys", () => {
-    const error = new Error(
-      "Keys: AKIAIOSFODNN7EXAMPLE and AKIAJ7EXAMPLE1234567",
-    );
+    const error = new Error("Keys: AKIAIOSFODNN7EXAMPLE and AKIAJ7EXAMPLE1234567");
     const sanitized = sanitizeError(error, true);
 
     expect(sanitized).toContain("[REDACTED_AWS_KEY]");
@@ -86,8 +82,7 @@ describe("sanitizeError() - AWS key redaction", () => {
 
   it("redacts AWS keys in stack traces (development)", () => {
     const error = new Error("Error");
-    error.stack =
-      "Error: Failed with AKIAIOSFODNN7EXAMPLE\n    at /path/to/file.js:10";
+    error.stack = "Error: Failed with AKIAIOSFODNN7EXAMPLE\n    at /path/to/file.js:10";
 
     const sanitized = sanitizeError(error, false);
 
@@ -134,9 +129,7 @@ describe("sanitizeError() - connection string redaction", () => {
   });
 
   it("redacts MySQL connection strings", () => {
-    const error = new Error(
-      "Failed: mysql://root:secret@localhost:3306/database",
-    );
+    const error = new Error("Failed: mysql://root:secret@localhost:3306/database");
     const sanitized = sanitizeError(error, true);
 
     expect(sanitized).toContain("[REDACTED_CONNECTION_STRING]");
@@ -260,8 +253,7 @@ describe("sanitizeError() - Private key redaction", () => {
   });
 
   it("redacts EC private keys", () => {
-    const key =
-      "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEII...\n-----END EC PRIVATE KEY-----";
+    const key = "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEII...\n-----END EC PRIVATE KEY-----";
     const error = new Error(`Exposed: ${key}`);
     const sanitized = sanitizeError(error, true);
 
@@ -270,8 +262,7 @@ describe("sanitizeError() - Private key redaction", () => {
   });
 
   it("redacts generic private keys", () => {
-    const key =
-      "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMG...\n-----END PRIVATE KEY-----";
+    const key = "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMG...\n-----END PRIVATE KEY-----";
     const error = new Error(`Leaked: ${key}`);
     const sanitized = sanitizeError(error, true);
 
@@ -290,9 +281,7 @@ describe("sanitizeError() - GCP API key redaction", () => {
   });
 
   it("redacts multiple GCP keys", () => {
-    const error = new Error(
-      "Keys: AIzaSyABC123def456GHI789jkl and AIzaSyXYZ987wvu654TSR321qpo",
-    );
+    const error = new Error("Keys: AIzaSyABC123def456GHI789jkl and AIzaSyXYZ987wvu654TSR321qpo");
     const sanitized = sanitizeError(error, true);
 
     expect(sanitized).toContain("[REDACTED_GCP_KEY]");
@@ -303,15 +292,11 @@ describe("sanitizeError() - GCP API key redaction", () => {
 
 describe("sanitizeError() - Azure key redaction", () => {
   it("redacts Azure AccountKey values", () => {
-    const error = new Error(
-      "Connection: AccountKey=abcdefghijklmnopqrstuvwxyz1234567890ABCDEFG==",
-    );
+    const error = new Error("Connection: AccountKey=abcdefghijklmnopqrstuvwxyz1234567890ABCDEFG==");
     const sanitized = sanitizeError(error, true);
 
     expect(sanitized).toContain("[REDACTED_AZURE_KEY]");
-    expect(sanitized).not.toContain(
-      "abcdefghijklmnopqrstuvwxyz1234567890ABCDEFG==",
-    );
+    expect(sanitized).not.toContain("abcdefghijklmnopqrstuvwxyz1234567890ABCDEFG==");
   });
 
   it("redacts Azure storage connection strings", () => {
@@ -340,17 +325,13 @@ describe("validateRequestSize()", () => {
 
   it("accepts custom max size", () => {
     const body = "x".repeat(2000);
-    expect(() => validateRequestSize(body, 1000)).toThrow(
-      /Request body too large/,
-    );
+    expect(() => validateRequestSize(body, 1000)).toThrow(/Request body too large/);
     expect(() => validateRequestSize(body, 3000)).not.toThrow();
   });
 
   it("validates object bodies", () => {
     const body = { data: "x".repeat(2000) };
-    expect(() => validateRequestSize(body, 1000)).toThrow(
-      /Request body too large/,
-    );
+    expect(() => validateRequestSize(body, 1000)).toThrow(/Request body too large/);
   });
 
   it("handles null body", () => {
@@ -381,9 +362,7 @@ describe("validateResponseSize()", () => {
 
   it("accepts custom max size", () => {
     const body = "x".repeat(2000);
-    expect(() => validateResponseSize(body, 1000)).toThrow(
-      /Response body too large/,
-    );
+    expect(() => validateResponseSize(body, 1000)).toThrow(/Response body too large/);
     expect(() => validateResponseSize(body, 3000)).not.toThrow();
   });
 
@@ -399,16 +378,12 @@ describe("validateStringInput()", () => {
 
   it("throws for strings over default 10MB limit", () => {
     const longString = "x".repeat(10485761);
-    expect(() => validateStringInput(longString)).toThrow(
-      /String input too long/,
-    );
+    expect(() => validateStringInput(longString)).toThrow(/String input too long/);
   });
 
   it("accepts custom max length", () => {
     const str = "x".repeat(2000);
-    expect(() => validateStringInput(str, 1000)).toThrow(
-      /String input too long/,
-    );
+    expect(() => validateStringInput(str, 1000)).toThrow(/String input too long/);
     expect(() => validateStringInput(str, 3000)).not.toThrow();
   });
 
@@ -454,9 +429,7 @@ describe("validateUriScheme()", () => {
   });
 
   it("blocks data: (dangerous scheme)", () => {
-    expect(validateUriScheme("data:text/html,<script>alert(1)</script>")).toBe(
-      false,
-    );
+    expect(validateUriScheme("data:text/html,<script>alert(1)</script>")).toBe(false);
   });
 
   it("blocks vbscript: (dangerous scheme)", () => {
@@ -491,12 +464,8 @@ describe("validateUriScheme()", () => {
   });
 
   it("handles complex URIs", () => {
-    expect(
-      validateUriScheme("https://user:pass@example.com:8080/path?query=1#hash"),
-    ).toBe(true);
-    expect(
-      validateUriScheme("docs://section/subsection?version=2#anchor"),
-    ).toBe(true);
+    expect(validateUriScheme("https://user:pass@example.com:8080/path?query=1#hash")).toBe(true);
+    expect(validateUriScheme("docs://section/subsection?version=2#anchor")).toBe(true);
   });
 
   it("rejects scheme starting with digit (RFC 3986)", () => {
@@ -542,36 +511,24 @@ describe("canonicalizePath()", () => {
   });
 
   it("throws on ../ traversal", () => {
-    expect(() => canonicalizePath("db://../etc/passwd")).toThrow(
-      /Path traversal detected/,
-    );
+    expect(() => canonicalizePath("db://../etc/passwd")).toThrow(/Path traversal detected/);
     expect(() => canonicalizePath("db://data/../../../etc/passwd")).toThrow(
       /Path traversal detected/,
     );
   });
 
   it("throws on ..\\ traversal (Windows-style)", () => {
-    expect(() => canonicalizePath("db://..\\etc\\passwd")).toThrow(
-      /Path traversal detected/,
-    );
+    expect(() => canonicalizePath("db://..\\etc\\passwd")).toThrow(/Path traversal detected/);
   });
 
   it("throws on URL-encoded traversal", () => {
-    expect(() => canonicalizePath("db://%2e%2e%2fetc/passwd")).toThrow(
-      /Path traversal detected/,
-    );
-    expect(() => canonicalizePath("db://%2e%2e/etc/passwd")).toThrow(
-      /Path traversal detected/,
-    );
-    expect(() => canonicalizePath("db://..%2fetc/passwd")).toThrow(
-      /Path traversal detected/,
-    );
+    expect(() => canonicalizePath("db://%2e%2e%2fetc/passwd")).toThrow(/Path traversal detected/);
+    expect(() => canonicalizePath("db://%2e%2e/etc/passwd")).toThrow(/Path traversal detected/);
+    expect(() => canonicalizePath("db://..%2fetc/passwd")).toThrow(/Path traversal detected/);
   });
 
   it("is case-insensitive for encoded traversal", () => {
-    expect(() => canonicalizePath("db://%2E%2E%2Fetc/passwd")).toThrow(
-      /Path traversal detected/,
-    );
+    expect(() => canonicalizePath("db://%2E%2E%2Fetc/passwd")).toThrow(/Path traversal detected/);
   });
 
   it("detects double-encoded path traversal", () => {
@@ -583,33 +540,25 @@ describe("canonicalizePath()", () => {
 
   it("detects triple-encoded path traversal", () => {
     // %25252e = double-encoded '%2e'
-    expect(() =>
-      canonicalizePath("db://%25252e%25252e%25252fetc/passwd"),
-    ).toThrow(/Path traversal detected/);
+    expect(() => canonicalizePath("db://%25252e%25252e%25252fetc/passwd")).toThrow(
+      /Path traversal detected/,
+    );
   });
 
   it("detects null byte injection (encoded)", () => {
-    expect(() => canonicalizePath("db://file.txt%00.jpg")).toThrow(
-      /null byte injection/,
-    );
+    expect(() => canonicalizePath("db://file.txt%00.jpg")).toThrow(/null byte injection/);
   });
 
   it("detects null byte injection (literal)", () => {
-    expect(() => canonicalizePath("db://file.txt\0.jpg")).toThrow(
-      /null byte injection/,
-    );
+    expect(() => canonicalizePath("db://file.txt\0.jpg")).toThrow(/null byte injection/);
   });
 
   it("detects mixed encoding (%2e./)", () => {
-    expect(() => canonicalizePath("db://%2e./etc/passwd")).toThrow(
-      /Path traversal detected/,
-    );
+    expect(() => canonicalizePath("db://%2e./etc/passwd")).toThrow(/Path traversal detected/);
   });
 
   it("detects mixed encoding (.%2e/)", () => {
-    expect(() => canonicalizePath("db://.%2e/etc/passwd")).toThrow(
-      /Path traversal detected/,
-    );
+    expect(() => canonicalizePath("db://.%2e/etc/passwd")).toThrow(/Path traversal detected/);
   });
 
   it("detects Unicode-encoded path traversal", () => {
@@ -697,10 +646,7 @@ describe("sanitizeInput() - prototype pollution", () => {
   });
 
   it("handles arrays", () => {
-    const malicious = [
-      { __proto__: { isAdmin: true }, id: 1 },
-      { name: "test" },
-    ];
+    const malicious = [{ __proto__: { isAdmin: true }, id: 1 }, { name: "test" }];
     const sanitized = sanitizeInput(malicious);
 
     expect(sanitized).toEqual([{ id: 1 }, { name: "test" }]);
@@ -730,9 +676,7 @@ describe("sanitizeInput() - prototype pollution", () => {
   });
 
   it("does not mutate original object", () => {
-    const original = JSON.parse(
-      '{"__proto__": {"isAdmin": true}, "name": "test"}',
-    );
+    const original = JSON.parse('{"__proto__": {"isAdmin": true}, "name": "test"}');
     const sanitized = sanitizeInput(original);
 
     // Original should still have __proto__ as an own property (when created via JSON.parse)

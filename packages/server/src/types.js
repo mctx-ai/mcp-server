@@ -21,8 +21,7 @@
 function string(options = {}) {
   const schema = { type: "string" };
 
-  if (options.description !== undefined)
-    schema.description = options.description;
+  if (options.description !== undefined) schema.description = options.description;
   if (options.enum !== undefined) schema.enum = options.enum;
   if (options.default !== undefined) schema.default = options.default;
   if (options.minLength !== undefined) schema.minLength = options.minLength;
@@ -50,8 +49,7 @@ function string(options = {}) {
 function number(options = {}) {
   const schema = { type: "number" };
 
-  if (options.description !== undefined)
-    schema.description = options.description;
+  if (options.description !== undefined) schema.description = options.description;
   if (options.enum !== undefined) schema.enum = options.enum;
   if (options.default !== undefined) schema.default = options.default;
   if (options.min !== undefined) schema.minimum = options.min;
@@ -73,8 +71,7 @@ function number(options = {}) {
 function boolean(options = {}) {
   const schema = { type: "boolean" };
 
-  if (options.description !== undefined)
-    schema.description = options.description;
+  if (options.description !== undefined) schema.description = options.description;
   if (options.default !== undefined) schema.default = options.default;
 
   if (options.required === true) schema._required = true;
@@ -94,8 +91,7 @@ function boolean(options = {}) {
 function array(options = {}) {
   const schema = { type: "array" };
 
-  if (options.description !== undefined)
-    schema.description = options.description;
+  if (options.description !== undefined) schema.description = options.description;
   if (options.default !== undefined) schema.default = options.default;
   if (options.items !== undefined) {
     // Clean _required metadata from items schema
@@ -120,8 +116,7 @@ function array(options = {}) {
 function object(options = {}) {
   const schema = { type: "object" };
 
-  if (options.description !== undefined)
-    schema.description = options.description;
+  if (options.description !== undefined) schema.description = options.description;
   if (options.default !== undefined) schema.default = options.default;
 
   // Handle nested properties
@@ -199,10 +194,7 @@ function cleanMetadata(schema) {
     cleaned.items = cleanMetadata(cleaned.items);
   }
 
-  if (
-    cleaned.additionalProperties &&
-    typeof cleaned.additionalProperties === "object"
-  ) {
+  if (cleaned.additionalProperties && typeof cleaned.additionalProperties === "object") {
     cleaned.additionalProperties = cleanMetadata(cleaned.additionalProperties);
   }
 

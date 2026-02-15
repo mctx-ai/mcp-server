@@ -78,9 +78,7 @@ function createRoleHelper(role) {
      */
     attach(data, mimeType) {
       if (typeof data !== "string") {
-        throw new Error(
-          `${role}.attach() requires base64 data as first argument`,
-        );
+        throw new Error(`${role}.attach() requires base64 data as first argument`);
       }
 
       if (mimeType === undefined || mimeType === null) {
