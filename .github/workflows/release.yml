@@ -26,11 +26,11 @@ jobs:
       - run: pnpm run lint
       - run: pnpm run test
       - name: Smoke test (server)
-        run: node --input-type=module -e "import('@mctx-ai/mcp-server').then(() => console.log('server OK'))"
+        run: node --input-type=module -e "import('${{ github.workspace }}/packages/server/dist/index.js').then(() => console.log('server OK'))"
       - name: Smoke test (dev)
-        run: npx mctx-dev --help
+        run: node ${{ github.workspace }}/packages/dev/src/cli.js --help
       - name: Smoke test (create)
-        run: node packages/create-mctx-server/index.js --help
+        run: node ${{ github.workspace }}/packages/create-mctx-server/index.js --help
 
   release:
     needs: ci-gate
