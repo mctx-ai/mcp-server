@@ -113,10 +113,7 @@ describe("basic functionality smoke test", () => {
   });
 
   it("conversation builder creates message arrays", () => {
-    const result = conversation(({ user, ai }) => [
-      user.say("Hello"),
-      ai.say("Hi there!"),
-    ]);
+    const result = conversation(({ user, ai }) => [user.say("Hello"), ai.say("Hi there!")]);
 
     expect(result.messages).toBeDefined();
     expect(Array.isArray(result.messages)).toBe(true);

@@ -106,10 +106,7 @@ export function createAsk(sendRequest, clientCapabilities) {
 
     // Send sampling request with timeout
     try {
-      const responsePromise = sendRequest(
-        "sampling/createMessage",
-        requestParams,
-      );
+      const responsePromise = sendRequest("sampling/createMessage", requestParams);
       const response = await Promise.race([responsePromise, timeoutPromise]);
 
       // Extract content from response

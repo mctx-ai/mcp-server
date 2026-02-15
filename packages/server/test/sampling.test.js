@@ -9,9 +9,7 @@ import { createAsk } from "../src/sampling.js";
 
 describe("createAsk()", () => {
   it("throws if sendRequest is not a function", () => {
-    expect(() => createAsk(null, { sampling: true })).toThrow(
-      /sendRequest to be a function/,
-    );
+    expect(() => createAsk(null, { sampling: true })).toThrow(/sendRequest to be a function/);
     expect(() => createAsk("not a function", { sampling: true })).toThrow(
       /sendRequest to be a function/,
     );
@@ -19,12 +17,8 @@ describe("createAsk()", () => {
 
   it("throws if clientCapabilities is missing", () => {
     const sendRequest = vi.fn();
-    expect(() => createAsk(sendRequest, null)).toThrow(
-      /requires clientCapabilities object/,
-    );
-    expect(() => createAsk(sendRequest)).toThrow(
-      /requires clientCapabilities object/,
-    );
+    expect(() => createAsk(sendRequest, null)).toThrow(/requires clientCapabilities object/);
+    expect(() => createAsk(sendRequest)).toThrow(/requires clientCapabilities object/);
   });
 
   it("returns null if client does not support sampling", () => {
@@ -185,18 +179,14 @@ describe("ask() - advanced options", () => {
     const sendRequest = vi.fn();
     const ask = createAsk(sendRequest, { sampling: true });
 
-    await expect(ask({ systemPrompt: "test" })).rejects.toThrow(
-      /must include messages array/,
-    );
+    await expect(ask({ systemPrompt: "test" })).rejects.toThrow(/must include messages array/);
   });
 
   it("throws if messages is not an array", async () => {
     const sendRequest = vi.fn();
     const ask = createAsk(sendRequest, { sampling: true });
 
-    await expect(ask({ messages: "not an array" })).rejects.toThrow(
-      /must include messages array/,
-    );
+    await expect(ask({ messages: "not an array" })).rejects.toThrow(/must include messages array/);
   });
 });
 
@@ -226,10 +216,7 @@ describe("ask() - timeout", () => {
     const sendRequest = vi
       .fn()
       .mockImplementation(
-        () =>
-          new Promise((resolve) =>
-            setTimeout(() => resolve({ content: "Late" }), 1000),
-          ),
+        () => new Promise((resolve) => setTimeout(() => resolve({ content: "Late" }), 1000)),
       );
     const ask = createAsk(sendRequest, { sampling: true });
 
@@ -252,37 +239,28 @@ describe("ask() - error handling", () => {
     const sendRequest = vi.fn().mockResolvedValue({});
     const ask = createAsk(sendRequest, { sampling: true });
 
-    await expect(ask("Test")).rejects.toThrow(
-      /Invalid sampling response: missing content/,
-    );
+    await expect(ask("Test")).rejects.toThrow(/Invalid sampling response: missing content/);
   });
 
   it("throws if response is null", async () => {
     const sendRequest = vi.fn().mockResolvedValue(null);
     const ask = createAsk(sendRequest, { sampling: true });
 
-    await expect(ask("Test")).rejects.toThrow(
-      /Invalid sampling response: missing content/,
-    );
+    await expect(ask("Test")).rejects.toThrow(/Invalid sampling response: missing content/);
   });
 
   it("wraps sendRequest errors with context", async () => {
     const sendRequest = vi.fn().mockRejectedValue(new Error("Network error"));
     const ask = createAsk(sendRequest, { sampling: true });
 
-    await expect(ask("Test")).rejects.toThrow(
-      /Sampling request failed: Network error/,
-    );
+    await expect(ask("Test")).rejects.toThrow(/Sampling request failed: Network error/);
   });
 
   it("preserves timeout errors", async () => {
     const sendRequest = vi
       .fn()
       .mockImplementation(
-        () =>
-          new Promise((resolve) =>
-            setTimeout(() => resolve({ content: "Late" }), 1000),
-          ),
+        () => new Promise((resolve) => setTimeout(() => resolve({ content: "Late" }), 1000)),
       );
     const ask = createAsk(sendRequest, { sampling: true });
 
@@ -293,12 +271,8 @@ describe("ask() - error handling", () => {
     const sendRequest = vi.fn();
     const ask = createAsk(sendRequest, { sampling: true });
 
-    await expect(ask(123)).rejects.toThrow(
-      /requires a string prompt or options object/,
-    );
-    await expect(ask(null)).rejects.toThrow(
-      /requires a string prompt or options object/,
-    );
+    await expect(ask(123)).rejects.toThrow(/requires a string prompt or options object/);
+    await expect(ask(null)).rejects.toThrow(/requires a string prompt or options object/);
   });
 });
 
@@ -308,9 +282,7 @@ describe("ask() - edge cases", () => {
     const ask = createAsk(sendRequest, { sampling: true });
 
     // Empty string is falsy in JavaScript, so it's treated as missing content
-    await expect(ask("Test")).rejects.toThrow(
-      /Invalid sampling response: missing content/,
-    );
+    await expect(ask("Test")).rejects.toThrow(/Invalid sampling response: missing content/);
   });
 
   it("handles special characters in prompt", async () => {

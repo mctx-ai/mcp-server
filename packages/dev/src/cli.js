@@ -55,9 +55,7 @@ const port =
     : parseInt(process.env.PORT || "3000", 10);
 
 if (isNaN(port) || port < 1 || port > 65535) {
-  console.error(
-    `Error: Invalid port "${args[portFlagIndex + 1] || process.env.PORT}"`,
-  );
+  console.error(`Error: Invalid port "${args[portFlagIndex + 1] || process.env.PORT}"`);
   process.exit(1);
 }
 
@@ -81,9 +79,7 @@ try {
   // Handle EADDRINUSE port conflicts (Fix #1)
   if (error.code === "EADDRINUSE") {
     console.error(`\nError: Port ${port} is already in use.`);
-    console.error(
-      `Try a different port: npx mctx-dev ${entryFile} --port ${port + 1}`,
-    );
+    console.error(`Try a different port: npx mctx-dev ${entryFile} --port ${port + 1}`);
     process.exit(1);
   }
 

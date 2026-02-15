@@ -66,11 +66,7 @@ describe("generateCompletions() - prompt arguments with T.enum", () => {
       "",
     );
 
-    expect(result.completion.values).toEqual([
-      "pending",
-      "active",
-      "completed",
-    ]);
+    expect(result.completion.values).toEqual(["pending", "active", "completed"]);
     expect(result.completion.hasMore).toBe(false);
   });
 
@@ -143,11 +139,7 @@ describe("generateCompletions() - prompt arguments with T.enum", () => {
       "",
     );
 
-    expect(result.completion.values).toEqual([
-      "pending",
-      "active",
-      "completed",
-    ]);
+    expect(result.completion.values).toEqual(["pending", "active", "completed"]);
   });
 });
 
@@ -360,11 +352,7 @@ describe("generateCompletions() - resources", () => {
       "",
     );
 
-    expect(result.completion.values).toEqual([
-      "customer-1",
-      "customer-2",
-      "customer-3",
-    ]);
+    expect(result.completion.values).toEqual(["customer-1", "customer-2", "customer-3"]);
   });
 
   it("filters resource completion results", () => {
@@ -407,11 +395,7 @@ describe("generateCompletions() - resources", () => {
       },
     };
 
-    generateCompletions(
-      resources,
-      { type: "ref/resource", uri: "db://test" },
-      "val",
-    );
+    generateCompletions(resources, { type: "ref/resource", uri: "db://test" }, "val");
 
     expect(completeFn).toHaveBeenCalledWith(null, "val");
   });

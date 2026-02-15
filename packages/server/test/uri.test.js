@@ -52,9 +52,7 @@ describe("extractTemplateVars()", () => {
   });
 
   it("handles multiple variables in different positions", () => {
-    const vars = extractTemplateVars(
-      "http://api/{version}/users/{userId}/posts/{postId}",
-    );
+    const vars = extractTemplateVars("http://api/{version}/users/{userId}/posts/{postId}");
     expect(vars).toEqual(["version", "userId", "postId"]);
   });
 
@@ -73,15 +71,9 @@ describe("extractTemplateVars()", () => {
   });
 
   it("throws on invalid variable names", () => {
-    expect(() => extractTemplateVars("db://{user-id}")).toThrow(
-      /Invalid template variable name/,
-    );
-    expect(() => extractTemplateVars("db://{user.id}")).toThrow(
-      /Invalid template variable name/,
-    );
-    expect(() => extractTemplateVars("db://{user id}")).toThrow(
-      /Invalid template variable name/,
-    );
+    expect(() => extractTemplateVars("db://{user-id}")).toThrow(/Invalid template variable name/);
+    expect(() => extractTemplateVars("db://{user.id}")).toThrow(/Invalid template variable name/);
+    expect(() => extractTemplateVars("db://{user id}")).toThrow(/Invalid template variable name/);
   });
 });
 
@@ -150,10 +142,7 @@ describe("matchUri() - template URIs", () => {
   });
 
   it("handles parameters at different positions", () => {
-    const match = matchUri(
-      "http://api/{version}/users/{userId}",
-      "http://api/v1/users/alice",
-    );
+    const match = matchUri("http://api/{version}/users/{userId}", "http://api/v1/users/alice");
 
     expect(match).toEqual({
       params: {
@@ -210,10 +199,7 @@ describe("matchUri() - special characters", () => {
   it("handles query strings in template params", () => {
     // Query strings are captured as part of the parameter value
     // because the regex pattern uses [^/]+ which stops at slashes but not at ?
-    const match = matchUri(
-      "http://api.com/users/{id}",
-      "http://api.com/users/123?format=json",
-    );
+    const match = matchUri("http://api.com/users/{id}", "http://api.com/users/123?format=json");
     expect(match).toEqual({ params: { id: "123?format=json" } });
   });
 });

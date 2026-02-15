@@ -175,9 +175,7 @@ describe("full server integration", () => {
     const resourcesList = await resourcesListRes.json();
 
     expect(resourcesList.result.resources).toHaveLength(1);
-    expect(resourcesList.result.resources[0].uri).toBe(
-      "https:/example.com/docs/calculator",
-    );
+    expect(resourcesList.result.resources[0].uri).toBe("https:/example.com/docs/calculator");
 
     // Test resources/templates/list
     const templatesListReq = createRequest({
@@ -280,9 +278,7 @@ describe("error handling end-to-end", () => {
     const app = createServer();
 
     const failingResource = () => {
-      throw new Error(
-        "Failed to fetch from postgres://user:password@localhost/db",
-      );
+      throw new Error("Failed to fetch from postgres://user:password@localhost/db");
     };
     // Register with canonicalized URI (single slash after scheme)
     app.resource("https:/example.com/data", failingResource);
@@ -504,13 +500,9 @@ describe("security integration", () => {
 
     // Verify all security headers are present
     expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
-    expect(response.headers.get("Content-Security-Policy")).toBe(
-      "default-src 'none'",
-    );
+    expect(response.headers.get("Content-Security-Policy")).toBe("default-src 'none'");
     expect(response.headers.get("X-Frame-Options")).toBe("DENY");
-    expect(response.headers.get("Content-Type")).toBe(
-      "application/json; charset=utf-8",
-    );
+    expect(response.headers.get("Content-Type")).toBe("application/json; charset=utf-8");
   });
 
   it("includes security headers in error responses", async () => {
@@ -526,9 +518,7 @@ describe("security integration", () => {
 
     // Verify security headers in error responses
     expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
-    expect(response.headers.get("Content-Security-Policy")).toBe(
-      "default-src 'none'",
-    );
+    expect(response.headers.get("Content-Security-Policy")).toBe("default-src 'none'");
     expect(response.headers.get("X-Frame-Options")).toBe("DENY");
   });
 
@@ -545,9 +535,7 @@ describe("security integration", () => {
 
     // Verify security headers in parse error responses
     expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
-    expect(response.headers.get("Content-Security-Policy")).toBe(
-      "default-src 'none'",
-    );
+    expect(response.headers.get("Content-Security-Policy")).toBe("default-src 'none'");
     expect(response.headers.get("X-Frame-Options")).toBe("DENY");
   });
 
@@ -563,9 +551,7 @@ describe("security integration", () => {
     // Verify security headers in 405 responses
     expect(response.status).toBe(405);
     expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
-    expect(response.headers.get("Content-Security-Policy")).toBe(
-      "default-src 'none'",
-    );
+    expect(response.headers.get("Content-Security-Policy")).toBe("default-src 'none'");
     expect(response.headers.get("X-Frame-Options")).toBe("DENY");
   });
 });

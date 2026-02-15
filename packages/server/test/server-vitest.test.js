@@ -60,9 +60,7 @@ describe("tool registration and tools/list", () => {
 
   it("throws if tool handler is not a function", () => {
     const app = createServer();
-    expect(() => app.tool("invalid", "not a function")).toThrow(
-      /must be a function/,
-    );
+    expect(() => app.tool("invalid", "not a function")).toThrow(/must be a function/);
   });
 });
 
@@ -293,9 +291,7 @@ describe("resources/list", () => {
 
   it("throws if resource handler is not a function", () => {
     const app = createServer();
-    expect(() => app.resource("test://uri", "not a function")).toThrow(
-      /must be a function/,
-    );
+    expect(() => app.resource("test://uri", "not a function")).toThrow(/must be a function/);
   });
 });
 
@@ -319,9 +315,7 @@ describe("resources/templates/list", () => {
     const data = await response.json();
 
     expect(data.result.resourceTemplates).toHaveLength(1);
-    expect(data.result.resourceTemplates[0].uriTemplate).toBe(
-      "user://{userId}",
-    );
+    expect(data.result.resourceTemplates[0].uriTemplate).toBe("user://{userId}");
   });
 });
 
@@ -710,9 +704,7 @@ describe("resources/read", () => {
     const data = await response.json();
 
     // Buffer is converted to base64 blob
-    expect(data.result.contents[0].blob).toBe(
-      Buffer.from("binary data").toString("base64"),
-    );
+    expect(data.result.contents[0].blob).toBe(Buffer.from("binary data").toString("base64"));
     expect(data.result.contents[0].mimeType).toBe("application/octet-stream");
   });
 });
@@ -749,9 +741,7 @@ describe("prompts/list", () => {
 
   it("throws if prompt handler is not a function", () => {
     const app = createServer();
-    expect(() => app.prompt("test", "not a function")).toThrow(
-      /must be a function/,
-    );
+    expect(() => app.prompt("test", "not a function")).toThrow(/must be a function/);
   });
 });
 
@@ -1055,9 +1045,7 @@ describe("initialize", () => {
     const response = await app.fetch(request);
     const data = await response.json();
 
-    expect(data.result.instructions).toBe(
-      "You help developers debug CI pipelines...",
-    );
+    expect(data.result.instructions).toBe("You help developers debug CI pipelines...");
   });
 
   it("omits instructions when not provided", async () => {

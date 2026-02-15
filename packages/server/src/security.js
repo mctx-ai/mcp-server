@@ -63,8 +63,7 @@ const SECRET_PATTERNS = [
   {
     regex:
       /(?:api[_-]?key|token|secret|password)\s{0,10}[=:]\s{0,10}['"]?([a-zA-Z0-9_.-]{16,})['"]?/gi,
-    label: (match) =>
-      match.replace(/(['"]?)[a-zA-Z0-9_.-]{16,}(['"]?)/, "$1[REDACTED]$2"),
+    label: (match) => match.replace(/(['"]?)[a-zA-Z0-9_.-]{16,}(['"]?)/, "$1[REDACTED]$2"),
   },
 ];
 
@@ -131,13 +130,10 @@ export function sanitizeError(error, isProduction = true) {
 export function validateRequestSize(body, maxSize = 1048576) {
   if (!body) return;
 
-  const size =
-    typeof body === "string" ? body.length : JSON.stringify(body).length;
+  const size = typeof body === "string" ? body.length : JSON.stringify(body).length;
 
   if (size > maxSize) {
-    throw new Error(
-      `Request body too large: ${size} bytes (max: ${maxSize} bytes)`,
-    );
+    throw new Error(`Request body too large: ${size} bytes (max: ${maxSize} bytes)`);
   }
 }
 
@@ -155,13 +151,10 @@ export function validateRequestSize(body, maxSize = 1048576) {
 export function validateResponseSize(body, maxSize = 1048576) {
   if (!body) return;
 
-  const size =
-    typeof body === "string" ? body.length : JSON.stringify(body).length;
+  const size = typeof body === "string" ? body.length : JSON.stringify(body).length;
 
   if (size > maxSize) {
-    throw new Error(
-      `Response body too large: ${size} bytes (max: ${maxSize} bytes)`,
-    );
+    throw new Error(`Response body too large: ${size} bytes (max: ${maxSize} bytes)`);
   }
 }
 
@@ -180,9 +173,7 @@ export function validateStringInput(value, maxLength = 10485760) {
   if (typeof value !== "string") return;
 
   if (value.length > maxLength) {
-    throw new Error(
-      `String input too long: ${value.length} chars (max: ${maxLength} chars)`,
-    );
+    throw new Error(`String input too long: ${value.length} chars (max: ${maxLength} chars)`);
   }
 }
 
@@ -263,9 +254,7 @@ export function canonicalizePath(uri) {
 
   // Detect null byte injection (both encoded and literal)
   if (decoded.includes("%00") || decoded.includes("\0")) {
-    throw new Error(
-      "Path traversal detected: null byte injection is not allowed",
-    );
+    throw new Error("Path traversal detected: null byte injection is not allowed");
   }
 
   // Detect Unicode variants of dots and slashes
@@ -275,9 +264,7 @@ export function canonicalizePath(uri) {
     decoded.includes("\u002e\u002e/") ||
     decoded.includes("..\u002f")
   ) {
-    throw new Error(
-      "Path traversal detected: Unicode-encoded ../ sequences are not allowed",
-    );
+    throw new Error("Path traversal detected: Unicode-encoded ../ sequences are not allowed");
   }
 
   // Check fully decoded string for literal path traversal attempts
@@ -294,9 +281,7 @@ export function canonicalizePath(uri) {
     lowerDecoded.includes("%2e.") ||
     lowerDecoded.includes(".%2e")
   ) {
-    throw new Error(
-      "Path traversal detected: encoded ../ sequences are not allowed",
-    );
+    throw new Error("Path traversal detected: encoded ../ sequences are not allowed");
   }
 
   // Normalize path separators

@@ -72,11 +72,7 @@ export function generateCompletions(registeredItems, ref, argumentValue) {
 
   // Handle prompt argument completion
   if (ref.type === "ref/prompt-argument") {
-    return generatePromptArgumentCompletions(
-      registeredItems,
-      ref,
-      partialValue,
-    );
+    return generatePromptArgumentCompletions(registeredItems, ref, partialValue);
   }
 
   // Handle resource completion
@@ -101,11 +97,7 @@ function generatePromptArgumentCompletions(registeredItems, ref, partialValue) {
 
   // Check for custom completion handler
   if (typeof prompt.complete === "function") {
-    return executeCustomCompletion(
-      prompt.complete,
-      ref.argumentName,
-      partialValue,
-    );
+    return executeCustomCompletion(prompt.complete, ref.argumentName, partialValue);
   }
 
   // Auto-generate from T.enum values if available

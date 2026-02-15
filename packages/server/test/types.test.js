@@ -264,9 +264,7 @@ describe("T.object()", () => {
     expect(schema.properties.address.type).toBe("object");
     expect(schema.properties.address.properties.street.type).toBe("string");
     expect(schema.properties.address.required).toEqual(["street", "city"]);
-    expect(
-      schema.properties.address.properties.street._required,
-    ).toBeUndefined();
+    expect(schema.properties.address.properties.street._required).toBeUndefined();
   });
 });
 

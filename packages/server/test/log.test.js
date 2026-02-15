@@ -5,13 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach } from "vitest";
-import {
-  log,
-  shouldLog,
-  getLogBuffer,
-  clearLogBuffer,
-  setLogLevel,
-} from "../src/log.js";
+import { log, shouldLog, getLogBuffer, clearLogBuffer, setLogLevel } from "../src/log.js";
 
 describe("log levels", () => {
   beforeEach(() => {

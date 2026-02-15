@@ -27,9 +27,7 @@ describe("createProgress()", () => {
   });
 
   it("throws if total is not a number", () => {
-    expect(() => createProgress("10")).toThrow(
-      /total must be a positive number/,
-    );
+    expect(() => createProgress("10")).toThrow(/total must be a positive number/);
     expect(() => createProgress({})).toThrow(/total must be a positive number/);
   });
 
