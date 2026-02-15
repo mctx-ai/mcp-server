@@ -26,7 +26,7 @@ jobs:
       - run: pnpm run lint
       - run: pnpm run test
       - name: Smoke test (server)
-        run: node -e "const s = require('@mctx-ai/mcp-server'); console.log('server OK')"
+        run: node --input-type=module -e "import('@mctx-ai/mcp-server').then(() => console.log('server OK'))"
       - name: Smoke test (dev)
         run: npx mctx-dev --help
       - name: Smoke test (create)
