@@ -28,7 +28,7 @@ import {
  * - X-Frame-Options: Prevents clickjacking
  */
 const SECURITY_HEADERS = {
-  "Content-Type": "application/json",
+  "Content-Type": "application/json; charset=utf-8",
   "X-Content-Type-Options": "nosniff",
   "Content-Security-Policy": "default-src 'none'",
   "X-Frame-Options": "DENY",
