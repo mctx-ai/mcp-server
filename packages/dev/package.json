@@ -40,6 +40,6 @@
     "provenance": true
   },
   "peerDependencies": {
-    "@mctx-ai/mcp-server": "^0.3.0"
+    "@mctx-ai/mcp-server": "*"
   }
 }
