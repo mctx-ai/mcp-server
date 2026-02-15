@@ -12,9 +12,10 @@ All GitHub Actions MUST use commit SHA references, never version tags or branch 
 
 ```yaml
 - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-- uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
 - uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
 ```
+
+Note: npm is included with Node.js, so no additional setup action is required.
 
 ### Wrong — tag or branch reference (not allowed)
 
