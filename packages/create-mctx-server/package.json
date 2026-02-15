@@ -26,5 +26,9 @@
   "bugs": {
     "url": "https://github.com/mctx-ai/mcp-server/issues"
   },
-  "homepage": "https://docs.mctx.ai"
+  "homepage": "https://docs.mctx.ai",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
 }

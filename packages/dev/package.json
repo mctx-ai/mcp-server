@@ -35,6 +35,10 @@
     "url": "https://github.com/mctx-ai/mcp-server/issues"
   },
   "homepage": "https://docs.mctx.ai",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "peerDependencies": {
     "@mctx-ai/mcp-server": "workspace:^"
   }

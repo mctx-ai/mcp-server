@@ -35,3 +35,6 @@ logs/
 tmp/
 temp/
 *.tmp
+
+# Direnv
+.direnv/
