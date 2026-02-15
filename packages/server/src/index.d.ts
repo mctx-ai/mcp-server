@@ -107,15 +107,32 @@ export interface Server {
 }
 
 /**
+ * Server configuration options.
+ */
+export interface ServerOptions {
+  /**
+   * Instructions for LLM clients using this server.
+   * Helps guide the LLM on how to use the server's capabilities.
+   *
+   * @example
+   * "This server provides tools for managing customer data. Use list_customers to browse, get_customer to fetch details."
+   */
+  instructions?: string;
+}
+
+/**
  * Creates an MCP server instance.
  *
+ * @param options - Server configuration options
  * @returns Server instance with registration methods and fetch handler
  *
  * @example
  * ```typescript
  * import { createServer, T } from '@mctx-ai/mcp-server';
  *
- * const server = createServer();
+ * const server = createServer({
+ *   instructions: "You help developers debug CI pipelines..."
+ * });
  *
  * server.tool('greet', (args: { name: string }) => {
  *   return `Hello, ${args.name}!`;
@@ -124,7 +141,7 @@ export interface Server {
  * export default { fetch: server.fetch };
  * ```
  */
-export function createServer(): Server;
+export function createServer(options?: ServerOptions): Server;
 
 // ============================================================================
 // Handler Types

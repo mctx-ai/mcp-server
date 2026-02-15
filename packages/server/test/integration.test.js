@@ -17,6 +17,62 @@ function createRequest(body) {
 }
 
 describe("full server integration", () => {
+  it("handles initialize with auto-detected capabilities", async () => {
+    const app = createServer({
+      instructions: "A comprehensive test server for calculator operations",
+    });
+
+    // Register tool
+    const calculate = ({ operation, a, b }) => {
+      switch (operation) {
+        case "add":
+          return a + b;
+        default:
+          return 0;
+      }
+    };
+    calculate.input = {
+      operation: T.string({ required: true }),
+      a: T.number({ required: true }),
+      b: T.number({ required: true }),
+    };
+    app.tool("calculate", calculate);
+
+    // Register resource
+    const docs = () => "Calculator documentation";
+    app.resource("https://example.com/docs", docs);
+
+    // Register prompt
+    const help = () => "How to use the calculator";
+    help.input = {};
+    app.prompt("help", help);
+
+    // Test initialize
+    const initRequest = createRequest({
+      jsonrpc: "2.0",
+      id: 0,
+      method: "initialize",
+      params: {
+        protocolVersion: "2024-11-05",
+        capabilities: {},
+        clientInfo: { name: "test-client", version: "1.0" },
+      },
+    });
+
+    const initResponse = await app.fetch(initRequest);
+    const initData = await initResponse.json();
+
+    expect(initData.result.protocolVersion).toBe("2024-11-05");
+    expect(initData.result.capabilities.tools).toBeDefined();
+    expect(initData.result.capabilities.resources).toBeDefined();
+    expect(initData.result.capabilities.prompts).toBeDefined();
+    expect(initData.result.capabilities.logging).toBeDefined();
+    expect(initData.result.serverInfo.name).toBe("@mctx-ai/mcp-server");
+    expect(initData.result.instructions).toBe(
+      "A comprehensive test server for calculator operations",
+    );
+  });
+
   it("creates server with tools, resources, and prompts", async () => {
     const app = createServer();
 

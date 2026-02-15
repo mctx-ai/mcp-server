@@ -747,3 +747,211 @@ describe("error sanitization", () => {
     expect(data.result.content[0].text).not.toContain("AKIAIOSFODNN7EXAMPLE");
   });
 });
+
+describe("initialize", () => {
+  it("responds with server info and capabilities", async () => {
+    const app = createServer();
+
+    const request = createRequest({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+      params: {
+        protocolVersion: "2024-11-05",
+        capabilities: {},
+        clientInfo: {
+          name: "test-client",
+          version: "1.0.0",
+        },
+      },
+    });
+
+    const response = await app.fetch(request);
+    const data = await response.json();
+
+    expect(data.jsonrpc).toBe("2.0");
+    expect(data.id).toBe(1);
+    expect(data.result.protocolVersion).toBe("2024-11-05");
+    expect(data.result.capabilities).toBeDefined();
+    expect(data.result.serverInfo).toBeDefined();
+    expect(data.result.serverInfo.name).toBe("@mctx-ai/mcp-server");
+    expect(data.result.serverInfo.version).toBe("0.3.0");
+  });
+
+  it("includes instructions when provided", async () => {
+    const app = createServer({
+      instructions: "You help developers debug CI pipelines...",
+    });
+
+    const request = createRequest({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+    });
+
+    const response = await app.fetch(request);
+    const data = await response.json();
+
+    expect(data.result.instructions).toBe(
+      "You help developers debug CI pipelines...",
+    );
+  });
+
+  it("omits instructions when not provided", async () => {
+    const app = createServer();
+
+    const request = createRequest({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+    });
+
+    const response = await app.fetch(request);
+    const data = await response.json();
+
+    expect(data.result.instructions).toBeUndefined();
+  });
+
+  it("auto-detects capabilities from registered tools", async () => {
+    const app = createServer();
+
+    const greet = () => "Hello!";
+    greet.input = {};
+    app.tool("greet", greet);
+
+    const request = createRequest({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+    });
+
+    const response = await app.fetch(request);
+    const data = await response.json();
+
+    expect(data.result.capabilities.tools).toBeDefined();
+    expect(data.result.capabilities.logging).toBeDefined();
+  });
+
+  it("auto-detects capabilities from registered resources", async () => {
+    const app = createServer();
+
+    const resource = () => "content";
+    app.resource("https://example.com/data", resource);
+
+    const request = createRequest({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+    });
+
+    const response = await app.fetch(request);
+    const data = await response.json();
+
+    expect(data.result.capabilities.resources).toBeDefined();
+    expect(data.result.capabilities.resources.subscribe).toBe(false);
+    expect(data.result.capabilities.resources.listChanged).toBe(false);
+    expect(data.result.capabilities.logging).toBeDefined();
+  });
+
+  it("auto-detects capabilities from registered prompts", async () => {
+    const app = createServer();
+
+    const prompt = () => "message";
+    prompt.input = {};
+    app.prompt("test", prompt);
+
+    const request = createRequest({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+    });
+
+    const response = await app.fetch(request);
+    const data = await response.json();
+
+    expect(data.result.capabilities.prompts).toBeDefined();
+    expect(data.result.capabilities.logging).toBeDefined();
+  });
+
+  it("includes all capabilities when tools, resources, and prompts are registered", async () => {
+    const app = createServer();
+
+    const tool = () => "result";
+    tool.input = {};
+    app.tool("test-tool", tool);
+
+    const resource = () => "content";
+    app.resource("https://example.com/data", resource);
+
+    const prompt = () => "message";
+    prompt.input = {};
+    app.prompt("test-prompt", prompt);
+
+    const request = createRequest({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+    });
+
+    const response = await app.fetch(request);
+    const data = await response.json();
+
+    expect(data.result.capabilities.tools).toBeDefined();
+    expect(data.result.capabilities.resources).toBeDefined();
+    expect(data.result.capabilities.prompts).toBeDefined();
+    expect(data.result.capabilities.logging).toBeDefined();
+  });
+
+  it("only includes logging capability when nothing is registered", async () => {
+    const app = createServer();
+
+    const request = createRequest({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+    });
+
+    const response = await app.fetch(request);
+    const data = await response.json();
+
+    expect(data.result.capabilities.tools).toBeUndefined();
+    expect(data.result.capabilities.resources).toBeUndefined();
+    expect(data.result.capabilities.prompts).toBeUndefined();
+    expect(data.result.capabilities.logging).toBeDefined();
+  });
+});
+
+describe("initialized notification", () => {
+  it("responds with 204 No Content for initialized notification", async () => {
+    const app = createServer();
+
+    const request = createRequest({
+      jsonrpc: "2.0",
+      method: "initialized",
+    });
+
+    const response = await app.fetch(request);
+
+    expect(response.status).toBe(204);
+    expect(response.body).toBeNull();
+  });
+});
+
+describe("ping", () => {
+  it("responds to ping with empty result", async () => {
+    const app = createServer();
+
+    const request = createRequest({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "ping",
+    });
+
+    const response = await app.fetch(request);
+    const data = await response.json();
+
+    expect(data.jsonrpc).toBe("2.0");
+    expect(data.id).toBe(1);
+    expect(data.result).toEqual({});
+  });
+});
