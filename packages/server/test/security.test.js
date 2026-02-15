@@ -426,51 +426,53 @@ describe("validateStringInput()", () => {
 });
 
 describe("validateUriScheme()", () => {
-  it("allows http:// by default", () => {
+  it("allows http:// (safe scheme)", () => {
     expect(validateUriScheme("http://example.com")).toBe(true);
   });
 
-  it("allows https:// by default", () => {
+  it("allows https:// (safe scheme)", () => {
     expect(validateUriScheme("https://example.com")).toBe(true);
   });
 
-  it("blocks file:// by default", () => {
+  it("allows custom schemes (e.g., docs://)", () => {
+    expect(validateUriScheme("docs://readme")).toBe(true);
+    expect(validateUriScheme("user://alice")).toBe(true);
+    expect(validateUriScheme("db://localhost")).toBe(true);
+    expect(validateUriScheme("custom://resource")).toBe(true);
+  });
+
+  it("allows ftp:// (not in denylist)", () => {
+    expect(validateUriScheme("ftp://example.com")).toBe(true);
+  });
+
+  it("blocks file:// (dangerous scheme)", () => {
     expect(validateUriScheme("file:///etc/passwd")).toBe(false);
   });
 
-  it("blocks javascript: by default", () => {
+  it("blocks javascript: (dangerous scheme)", () => {
     expect(validateUriScheme("javascript:alert(1)")).toBe(false);
   });
 
-  it("blocks data: by default", () => {
+  it("blocks data: (dangerous scheme)", () => {
     expect(validateUriScheme("data:text/html,<script>alert(1)</script>")).toBe(
       false,
     );
   });
 
-  it("blocks vbscript: by default", () => {
+  it("blocks vbscript: (dangerous scheme)", () => {
     expect(validateUriScheme("vbscript:msgbox(1)")).toBe(false);
   });
 
-  it("blocks about: by default", () => {
+  it("blocks about: (dangerous scheme)", () => {
     expect(validateUriScheme("about:blank")).toBe(false);
-  });
-
-  it("accepts custom allowed schemes", () => {
-    expect(validateUriScheme("db://localhost", ["db"])).toBe(true);
-    expect(validateUriScheme("custom://resource", ["custom"])).toBe(true);
-  });
-
-  it("rejects schemes not in allowlist", () => {
-    expect(validateUriScheme("ftp://example.com", ["http", "https"])).toBe(
-      false,
-    );
   });
 
   it("is case-insensitive", () => {
     expect(validateUriScheme("HTTP://example.com")).toBe(true);
     expect(validateUriScheme("HTTPS://example.com")).toBe(true);
+    expect(validateUriScheme("DOCS://readme")).toBe(true);
     expect(validateUriScheme("FILE:///etc/passwd")).toBe(false);
+    expect(validateUriScheme("JAVASCRIPT:alert(1)")).toBe(false);
   });
 
   it("returns false for URIs without scheme", () => {
@@ -492,6 +494,43 @@ describe("validateUriScheme()", () => {
     expect(
       validateUriScheme("https://user:pass@example.com:8080/path?query=1#hash"),
     ).toBe(true);
+    expect(
+      validateUriScheme("docs://section/subsection?version=2#anchor"),
+    ).toBe(true);
+  });
+
+  it("rejects scheme starting with digit (RFC 3986)", () => {
+    expect(validateUriScheme("123://invalid")).toBe(false);
+    expect(validateUriScheme("9abc://test")).toBe(false);
+  });
+
+  it("rejects scheme with underscore (not in RFC 3986)", () => {
+    expect(validateUriScheme("my_scheme://test")).toBe(false);
+    expect(validateUriScheme("test_underscore://resource")).toBe(false);
+  });
+
+  it("accepts scheme with valid RFC 3986 special chars (+.-)", () => {
+    expect(validateUriScheme("a+b://test")).toBe(true);
+    expect(validateUriScheme("a.b://test")).toBe(true);
+    expect(validateUriScheme("a-b://test")).toBe(true);
+    expect(validateUriScheme("a+b.c-d://test")).toBe(true);
+  });
+
+  it("rejects scheme longer than 32 characters", () => {
+    const longScheme = "a".repeat(33);
+    expect(validateUriScheme(`${longScheme}://test`)).toBe(false);
+  });
+
+  it("accepts scheme exactly 32 characters", () => {
+    const scheme32 = "a".repeat(32);
+    expect(validateUriScheme(`${scheme32}://test`)).toBe(true);
+  });
+
+  it("rejects scheme with invalid special characters", () => {
+    expect(validateUriScheme("my@scheme://test")).toBe(false);
+    expect(validateUriScheme("my#scheme://test")).toBe(false);
+    expect(validateUriScheme("my$scheme://test")).toBe(false);
+    expect(validateUriScheme("my%scheme://test")).toBe(false);
   });
 });
 

@@ -463,7 +463,7 @@ describe("security integration", () => {
     const data = await response.json();
 
     expect(data.error).toBeDefined();
-    expect(data.error.message).toContain("Invalid URI scheme");
+    expect(data.error.message).toContain("Disallowed URI scheme");
   });
 
   it("prevents path traversal in resources", async () => {
