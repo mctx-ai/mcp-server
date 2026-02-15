@@ -438,24 +438,30 @@ export function createServer(options = {}) {
     // Validate URI scheme (prevent dangerous schemes like file://, javascript:, data:)
     if (!validateUriScheme(uri)) {
       throw new Error(
-        `Invalid URI scheme: only http:// and https:// are allowed`,
+        `Disallowed URI scheme: dangerous schemes like file://, javascript:, data: are not allowed`,
       );
     }
 
-    // Canonicalize path to prevent traversal attacks
-    const canonicalUri = canonicalizePath(uri);
+    // Apply canonicalizePath to ALL URIs for consistent security validation
+    // This catches: null bytes, Unicode variants, multi-layer encoding, mixed encoding
+    // Path normalization (slash deduplication, backslash conversion) is safe for all schemes
+    const normalizedUri = canonicalizePath(uri);
 
     // Find matching resource (try exact match first, then templates)
     let handler = null;
     let extractedParams = {};
 
-    // Try exact match first (use canonical URI for matching)
-    if (resources.has(canonicalUri)) {
-      handler = resources.get(canonicalUri);
+    // Try exact match first (use normalized URI for matching)
+    if (resources.has(normalizedUri)) {
+      handler = resources.get(normalizedUri);
     } else {
       // Try template matching using uri.js module
+      // Canonicalize registered URIs for consistent matching
       for (const [registeredUri, h] of resources.entries()) {
-        const match = matchUri(registeredUri, canonicalUri);
+        // Canonicalize the registered URI for comparison
+        // This ensures consistent matching regardless of registration format
+        const normalizedRegisteredUri = canonicalizePath(registeredUri);
+        const match = matchUri(normalizedRegisteredUri, normalizedUri);
         if (match) {
           handler = h;
           extractedParams = match.params || {};

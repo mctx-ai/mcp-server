@@ -187,18 +187,18 @@ export function validateStringInput(value, maxLength = 10485760) {
 }
 
 /**
- * Validate URI scheme against allowlist
+ * Validate URI scheme against denylist
  *
  * Security: Prevents injection attacks via dangerous URI schemes
- * - Blocks file://, javascript:, data:, etc. by default
- * - Allows http:// and https:// by default
- * - Supports custom allowlists for special cases
+ * - Blocks file://, javascript:, data:, vbscript:, about: by default
+ * - Allows all other schemes (http://, https://, custom schemes like docs://)
+ * - MCP spec explicitly supports custom URI schemes for resources
+ * - Validates scheme format per RFC 3986
  *
  * @param {string} uri - URI to validate
- * @param {string[]} allowedSchemes - Allowed schemes (default: ['http', 'https'])
- * @returns {boolean} True if URI scheme is allowed
+ * @returns {boolean} True if URI scheme is safe (not in denylist)
  */
-export function validateUriScheme(uri, allowedSchemes = ["http", "https"]) {
+export function validateUriScheme(uri) {
   if (!uri || typeof uri !== "string") return false;
 
   // Extract scheme (characters before first colon)
@@ -207,13 +207,25 @@ export function validateUriScheme(uri, allowedSchemes = ["http", "https"]) {
 
   const scheme = schemeMatch[1].toLowerCase();
 
+  // RFC 3986: scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
+  // Must start with a letter, followed by letters, digits, +, -, or .
+  const schemeRegex = /^[a-z][a-z0-9+.-]*$/;
+  if (!schemeRegex.test(scheme)) {
+    return false;
+  }
+
+  // Reasonable length limit to prevent abuse
+  if (scheme.length > 32) {
+    return false;
+  }
+
   // Check if scheme is explicitly dangerous
   if (DANGEROUS_SCHEMES.includes(scheme)) {
     return false;
   }
 
-  // Check if scheme is in allowlist
-  return allowedSchemes.some((allowed) => allowed.toLowerCase() === scheme);
+  // All other schemes (including custom ones) are allowed
+  return true;
 }
 
 /**

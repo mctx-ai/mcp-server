@@ -393,7 +393,7 @@ describe("resources/read", () => {
     expect(data.error.message).toContain("Resource URI is required");
   });
 
-  it("validates URI scheme", async () => {
+  it("validates URI scheme (blocks dangerous schemes)", async () => {
     const app = createServer();
 
     const request = createRequest({
@@ -407,10 +407,91 @@ describe("resources/read", () => {
     const data = await response.json();
 
     expect(data.error).toBeDefined();
-    expect(data.error.message).toContain("Invalid URI scheme");
+    expect(data.error.message).toContain("Disallowed URI scheme");
   });
 
-  it("detects path traversal", async () => {
+  it("allows custom URI schemes", async () => {
+    const app = createServer();
+
+    const docsResource = () => "README content";
+    docsResource.mimeType = "text/plain";
+
+    app.resource("docs://readme", docsResource);
+
+    const request = createRequest({
+      jsonrpc: "2.0",
+      id: 28,
+      method: "resources/read",
+      params: { uri: "docs://readme" },
+    });
+
+    const response = await app.fetch(request);
+    const data = await response.json();
+
+    expect(data.result.contents[0].uri).toBe("docs://readme");
+    expect(data.result.contents[0].text).toBe("README content");
+    expect(data.result.contents[0].mimeType).toBe("text/plain");
+  });
+
+  it("allows custom URI scheme templates with parameter extraction", async () => {
+    const app = createServer();
+
+    const userResource = (params) => {
+      const userId = params?.userId || "unknown";
+      return `User ID: ${userId}`;
+    };
+    userResource.mimeType = "text/plain";
+
+    app.resource("user://{userId}", userResource);
+
+    const request = createRequest({
+      jsonrpc: "2.0",
+      id: 29,
+      method: "resources/read",
+      params: { uri: "user://alice123" },
+    });
+
+    const response = await app.fetch(request);
+    const data = await response.json();
+
+    expect(data.result.contents[0].text).toBe("User ID: alice123");
+  });
+
+  it("blocks javascript: scheme", async () => {
+    const app = createServer();
+
+    const request = createRequest({
+      jsonrpc: "2.0",
+      id: 30,
+      method: "resources/read",
+      params: { uri: "javascript:alert(1)" },
+    });
+
+    const response = await app.fetch(request);
+    const data = await response.json();
+
+    expect(data.error).toBeDefined();
+    expect(data.error.message).toContain("Disallowed URI scheme");
+  });
+
+  it("blocks data: scheme", async () => {
+    const app = createServer();
+
+    const request = createRequest({
+      jsonrpc: "2.0",
+      id: 31,
+      method: "resources/read",
+      params: { uri: "data:text/html,<script>alert(1)</script>" },
+    });
+
+    const response = await app.fetch(request);
+    const data = await response.json();
+
+    expect(data.error).toBeDefined();
+    expect(data.error.message).toContain("Disallowed URI scheme");
+  });
+
+  it("detects path traversal in HTTP URIs", async () => {
     const app = createServer();
 
     const request = createRequest({
@@ -418,6 +499,188 @@ describe("resources/read", () => {
       id: 16,
       method: "resources/read",
       params: { uri: "http://example.com/../../../etc/passwd" },
+    });
+
+    const response = await app.fetch(request);
+    const data = await response.json();
+
+    expect(data.error).toBeDefined();
+    expect(data.error.message).toContain("Path traversal detected");
+  });
+
+  it("detects path traversal in custom scheme URIs (../ pattern)", async () => {
+    const app = createServer();
+
+    const request = createRequest({
+      jsonrpc: "2.0",
+      id: 32,
+      method: "resources/read",
+      params: { uri: "docs://../../../etc/passwd" },
+    });
+
+    const response = await app.fetch(request);
+    const data = await response.json();
+
+    expect(data.error).toBeDefined();
+    expect(data.error.message).toContain("Path traversal detected");
+  });
+
+  it("detects path traversal in custom scheme URIs (..\\  pattern)", async () => {
+    const app = createServer();
+
+    const request = createRequest({
+      jsonrpc: "2.0",
+      id: 33,
+      method: "resources/read",
+      params: { uri: "docs://..\\\\windows\\\\system32" },
+    });
+
+    const response = await app.fetch(request);
+    const data = await response.json();
+
+    expect(data.error).toBeDefined();
+    expect(data.error.message).toContain("Path traversal detected");
+  });
+
+  it("detects path traversal in custom scheme with template params", async () => {
+    const app = createServer();
+
+    const userResource = (params) => {
+      const userId = params?.userId || "unknown";
+      return `User ID: ${userId}`;
+    };
+    userResource.mimeType = "text/plain";
+
+    app.resource("user://{userId}", userResource);
+
+    const request = createRequest({
+      jsonrpc: "2.0",
+      id: 34,
+      method: "resources/read",
+      params: { uri: "user://alice/../admin" },
+    });
+
+    const response = await app.fetch(request);
+    const data = await response.json();
+
+    expect(data.error).toBeDefined();
+    expect(data.error.message).toContain("Path traversal detected");
+  });
+
+  it("allows legitimate custom scheme URIs without traversal", async () => {
+    const app = createServer();
+
+    const docsResource = () => "README content";
+    docsResource.mimeType = "text/plain";
+
+    app.resource("docs://readme", docsResource);
+
+    const request = createRequest({
+      jsonrpc: "2.0",
+      id: 35,
+      method: "resources/read",
+      params: { uri: "docs://readme" },
+    });
+
+    const response = await app.fetch(request);
+    const data = await response.json();
+
+    expect(data.result.contents[0].text).toBe("README content");
+  });
+
+  it("allows custom scheme URIs with path segments", async () => {
+    const app = createServer();
+
+    const docsResource = () => "Nested resource content";
+    docsResource.mimeType = "text/plain";
+
+    app.resource("docs://path/to/resource", docsResource);
+
+    const request = createRequest({
+      jsonrpc: "2.0",
+      id: 36,
+      method: "resources/read",
+      params: { uri: "docs://path/to/resource" },
+    });
+
+    const response = await app.fetch(request);
+    const data = await response.json();
+
+    expect(data.result.contents[0].text).toBe("Nested resource content");
+  });
+
+  it("blocks URL-encoded path traversal in custom schemes", async () => {
+    const app = createServer();
+
+    const docsResource = () => "Secret content";
+    docsResource.mimeType = "text/plain";
+
+    app.resource("docs://readme", docsResource);
+
+    const request = createRequest({
+      jsonrpc: "2.0",
+      id: 37,
+      method: "resources/read",
+      params: { uri: "docs://%2e%2e%2fetc%2fpasswd" },
+    });
+
+    const response = await app.fetch(request);
+    const data = await response.json();
+
+    expect(data.error).toBeDefined();
+    expect(data.error.message).toContain("Path traversal detected");
+  });
+
+  it("blocks partially encoded path traversal in custom schemes", async () => {
+    const app = createServer();
+
+    const docsResource = () => "Secret content";
+    docsResource.mimeType = "text/plain";
+
+    app.resource("docs://readme", docsResource);
+
+    // Test %2e%2e/etc/passwd
+    const request1 = createRequest({
+      jsonrpc: "2.0",
+      id: 38,
+      method: "resources/read",
+      params: { uri: "docs://%2e%2e/etc/passwd" },
+    });
+
+    const response1 = await app.fetch(request1);
+    const data1 = await response1.json();
+
+    expect(data1.error).toBeDefined();
+    expect(data1.error.message).toContain("Path traversal detected");
+
+    // Test ..%2fetc/passwd
+    const request2 = createRequest({
+      jsonrpc: "2.0",
+      id: 39,
+      method: "resources/read",
+      params: { uri: "docs://..%2fetc/passwd" },
+    });
+
+    const response2 = await app.fetch(request2);
+    const data2 = await response2.json();
+
+    expect(data2.error).toBeDefined();
+    expect(data2.error.message).toContain("Path traversal detected");
+  });
+
+  it("blocks double-encoded path traversal in custom schemes", async () => {
+    const app = createServer();
+
+    const docsResource = () => "Secret content";
+    docsResource.mimeType = "text/plain";
+
+    app.resource("docs://readme", docsResource);
+
+    const request = createRequest({
+      jsonrpc: "2.0",
+      id: 40,
+      method: "resources/read",
+      params: { uri: "docs://%252e%252e%252fetc" },
     });
 
     const response = await app.fetch(request);
