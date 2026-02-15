@@ -790,11 +790,9 @@ export function createServer(options = {}) {
         return handleLoggingSetLevel(params);
 
       default: {
-        {
-          const error = new Error("Method not found");
-          error.code = -32601;
-          throw error;
-        }
+        const error = new Error("Method not found");
+        error.code = -32601;
+        throw error;
       }
     }
   }
