@@ -508,7 +508,9 @@ describe("security integration", () => {
       "default-src 'none'",
     );
     expect(response.headers.get("X-Frame-Options")).toBe("DENY");
-    expect(response.headers.get("Content-Type")).toBe("application/json; charset=utf-8");
+    expect(response.headers.get("Content-Type")).toBe(
+      "application/json; charset=utf-8",
+    );
   });
 
   it("includes security headers in error responses", async () => {
