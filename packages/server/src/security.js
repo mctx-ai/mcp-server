@@ -23,7 +23,7 @@ const SECRET_PATTERNS = [
   { regex: /(?:mongodb|postgres|mysql|mariadb|mssql|oracle):\/\/[^\s]+/gi, label: 'REDACTED_CONNECTION_STRING' },
 
   // Bearer tokens
-  { regex: /Bearer\s+[a-zA-Z0-9_\-\.]+/gi, label: 'Bearer [REDACTED]' },
+  { regex: /Bearer\s+[a-zA-Z0-9_\-.]+/gi, label: 'Bearer [REDACTED]' },
 
   // GitHub tokens (personal access tokens, OAuth, app tokens, refresh tokens)
   // MUST come before generic API key pattern (which would match "token:")
@@ -42,12 +42,12 @@ const SECRET_PATTERNS = [
   { regex: /AIzaSy[0-9A-Za-z\-_]{21,}/g, label: 'REDACTED_GCP_KEY' },
 
   // Azure connection strings
-  { regex: /AccountKey=[a-zA-Z0-9+\/=]{40,}/g, label: 'REDACTED_AZURE_KEY' },
+  { regex: /AccountKey=[a-zA-Z0-9+/=]{40,}/g, label: 'REDACTED_AZURE_KEY' },
 
   // Generic API key patterns (key=, token=, secret=, password= followed by value)
   // ReDoS mitigation: bounded whitespace quantifiers (max 10 instead of unbounded \s*)
   // MUST come LAST to avoid matching more specific token patterns above
-  { regex: /(?:api[_-]?key|token|secret|password)\s{0,10}[=:]\s{0,10}['"]?([a-zA-Z0-9_\-\.]{16,})['"]?/gi, label: (match) => match.replace(/(['"]?)[a-zA-Z0-9_\-\.]{16,}(['"]?)/, '$1[REDACTED]$2') },
+  { regex: /(?:api[_-]?key|token|secret|password)\s{0,10}[=:]\s{0,10}['"]?([a-zA-Z0-9_.-]{16,})['"]?/gi, label: (match) => match.replace(/(['"]?)[a-zA-Z0-9_.-]{16,}(['"]?)/, '$1[REDACTED]$2') },
 ];
 
 // Dangerous URI schemes that enable injection attacks

@@ -16,6 +16,9 @@ export default [
         clearTimeout: 'readonly',
         setInterval: 'readonly',
         clearInterval: 'readonly',
+        // Cloudflare Worker / Web API globals
+        Request: 'readonly',
+        Response: 'readonly',
       },
     },
     rules: {

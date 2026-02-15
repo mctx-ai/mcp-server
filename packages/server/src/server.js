@@ -7,11 +7,9 @@
 
 import { buildInputSchema } from './types.js';
 import { matchUri, isTemplate } from './uri.js';
-import { conversation } from './conversation.js';
-import { createProgress, PROGRESS_DEFAULTS } from './progress.js';
-import { createAsk } from './sampling.js';
+import { PROGRESS_DEFAULTS } from './progress.js';
 import { generateCompletions } from './completion.js';
-import { log, getLogBuffer, clearLogBuffer, setLogLevel } from './log.js';
+import { getLogBuffer, clearLogBuffer, setLogLevel } from './log.js';
 import {
   sanitizeError as securitySanitizeError,
   validateRequestSize,
@@ -145,7 +143,7 @@ export function createServer() {
   // Client capabilities (set during initialization, not implemented yet)
   // NOTE: In HTTP/stateless mode, sampling requires bidirectional communication
   // which isn't available. This would work in WebSocket/SSE transport.
-  const clientCapabilities = { sampling: false };
+  // const _clientCapabilities = { sampling: false };
 
   /**
    * Register a tool
@@ -707,21 +705,24 @@ export function createServer() {
       case 'logging/setLevel':
         return handleLoggingSetLevel(params);
 
-      default:
-        const error = new Error('Method not found');
-        error.code = -32601;
-        throw error;
+      default: {
+        {
+          const error = new Error('Method not found');
+          error.code = -32601;
+          throw error;
+        }
+      }
     }
   }
 
   /**
    * Cloudflare Worker fetch handler
    * @param {Request} request - HTTP request
-   * @param {Object} env - Environment variables
-   * @param {Object} ctx - Execution context
+   * @param {Object} _env - Environment variables
+   * @param {Object} _ctx - Execution context
    * @returns {Promise<Response>} HTTP response
    */
-  async function fetch(request, env, ctx) {
+  async function fetch(request, _env, _ctx) {
     // Only accept POST requests
     if (request.method !== 'POST') {
       return new Response(
@@ -752,7 +753,7 @@ export function createServer() {
 
       // Parse JSON body
       rpcRequest = JSON.parse(rawBody);
-    } catch (error) {
+    } catch {
       // Parse error
       return new Response(
         JSON.stringify({
@@ -796,10 +797,10 @@ export function createServer() {
       // NOTE: In HTTP mode, logs are buffered but can't be sent as notifications
       // mid-request. In a streaming transport (WebSocket/SSE), these would be
       // sent as notifications/message events during handler execution.
-      const bufferedLogs = getLogBuffer();
+      getLogBuffer();
       clearLogBuffer();
 
-      // TODO: When streaming transport is added, send bufferedLogs as notifications
+      // TODO: When streaming transport is added, send buffered logs as notifications
       // For now, just clear them since we can't send them in stateless HTTP mode
 
       // For notifications (no id), return 204 No Content

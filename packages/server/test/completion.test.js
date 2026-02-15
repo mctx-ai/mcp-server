@@ -147,7 +147,7 @@ describe('generateCompletions() - custom completion handlers', () => {
   it('uses custom complete function for prompts', () => {
     const prompts = {
       'list-customers': {
-        complete: (argName, partialValue) => {
+        complete: (argName, _partialValue) => {
           if (argName === 'status') {
             return ['active', 'inactive', 'pending'];
           }

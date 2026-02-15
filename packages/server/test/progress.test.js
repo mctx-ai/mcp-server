@@ -129,7 +129,7 @@ describe('createProgress() - realistic usage', () => {
     const step = createProgress(items.length);
     const notifications = [];
 
-    for (const item of items) {
+    for (let i = 0; i < items.length; i++) {
       notifications.push(step());
       // Process item...
     }
