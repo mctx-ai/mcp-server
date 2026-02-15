@@ -16,7 +16,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "mkdir -p dist && cp src/*.js src/*.d.ts dist/",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src/ test/",
