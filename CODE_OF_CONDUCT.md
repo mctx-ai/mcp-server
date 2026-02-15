@@ -4,4 +4,4 @@ This project follows the [Contributor Covenant v2.1](https://www.contributor-cov
 
 ## Enforcement
 
-Report issues to security@mctx.ai. All reports will be reviewed promptly.
+If you experience or witness unacceptable behavior, please report it by opening a GitHub issue or emailing security@mctx.ai. I'll review and address reports as quickly as I can.
