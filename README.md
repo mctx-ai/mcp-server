@@ -27,18 +27,18 @@ npm install @mctx-ai/mcp-server
 ```
 
 ```javascript
-import { createServer, T } from '@mctx-ai/mcp-server';
+import { createServer, T } from "@mctx-ai/mcp-server";
 
 const app = createServer();
 
 function greet({ name }) {
   return `Hello, ${name}! Welcome to mctx.`;
 }
-greet.description = 'Greet someone by name';
+greet.description = "Greet someone by name";
 greet.input = {
-  name: T.string({ required: true, description: 'Name to greet' }),
+  name: T.string({ required: true, description: "Name to greet" }),
 };
-app.tool('greet', greet);
+app.tool("greet", greet);
 
 export default app;
 ```

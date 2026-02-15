@@ -5,11 +5,11 @@
  * app with tool/resource/prompt registration and JSON-RPC 2.0 routing.
  */
 
-import { buildInputSchema } from './types.js';
-import { matchUri, isTemplate } from './uri.js';
-import { PROGRESS_DEFAULTS } from './progress.js';
-import { generateCompletions } from './completion.js';
-import { getLogBuffer, clearLogBuffer, setLogLevel } from './log.js';
+import { buildInputSchema } from "./types.js";
+import { matchUri, isTemplate } from "./uri.js";
+import { PROGRESS_DEFAULTS } from "./progress.js";
+import { generateCompletions } from "./completion.js";
+import { getLogBuffer, clearLogBuffer, setLogLevel } from "./log.js";
 import {
   sanitizeError as securitySanitizeError,
   validateRequestSize,
@@ -17,7 +17,7 @@ import {
   validateUriScheme,
   canonicalizePath,
   sanitizeInput,
-} from './security.js';
+} from "./security.js";
 
 /**
  * HTTP Security Headers
@@ -28,10 +28,10 @@ import {
  * - X-Frame-Options: Prevents clickjacking
  */
 const SECURITY_HEADERS = {
-  'Content-Type': 'application/json',
-  'X-Content-Type-Options': 'nosniff',
-  'Content-Security-Policy': "default-src 'none'",
-  'X-Frame-Options': 'DENY',
+  "Content-Type": "application/json",
+  "X-Content-Type-Options": "nosniff",
+  "Content-Security-Policy": "default-src 'none'",
+  "X-Frame-Options": "DENY",
 };
 
 /**
@@ -48,8 +48,8 @@ function safeSerialize(value) {
     if (val === null) return null;
 
     // Handle primitives
-    if (typeof val !== 'object') {
-      if (typeof val === 'bigint') return val.toString();
+    if (typeof val !== "object") {
+      if (typeof val === "bigint") return val.toString();
       return val;
     }
 
@@ -60,7 +60,7 @@ function safeSerialize(value) {
 
     // Handle circular references
     if (seen.has(val)) {
-      return '[Circular]';
+      return "[Circular]";
     }
     seen.add(val);
 
@@ -77,7 +77,8 @@ function safeSerialize(value) {
 function sanitizeError(error) {
   // Determine if we're in production mode
   // Check NODE_ENV or default to production (fail secure)
-  const isProduction = !process.env.NODE_ENV || process.env.NODE_ENV === 'production';
+  const isProduction =
+    !process.env.NODE_ENV || process.env.NODE_ENV === "production";
 
   return securitySanitizeError(error, isProduction);
 }
@@ -91,9 +92,9 @@ function parseCursor(cursor) {
   if (!cursor) return 0;
 
   try {
-    const decoded = Buffer.from(cursor, 'base64').toString('utf-8');
+    const decoded = Buffer.from(cursor, "base64").toString("utf-8");
     const offset = parseInt(decoded, 10);
-    return (isNaN(offset) || offset < 0) ? 0 : offset;
+    return isNaN(offset) || offset < 0 ? 0 : offset;
   } catch {
     return 0;
   }
@@ -105,7 +106,7 @@ function parseCursor(cursor) {
  * @returns {string} Base64 encoded cursor
  */
 function createCursor(offset) {
-  return Buffer.from(String(offset), 'utf-8').toString('base64');
+  return Buffer.from(String(offset), "utf-8").toString("base64");
 }
 
 /**
@@ -129,7 +130,6 @@ function paginate(items, cursor, pageSize = 50) {
   return result;
 }
 
-
 /**
  * Create MCP server instance
  * @returns {Object} Server app with registration methods and fetch handler
@@ -152,7 +152,7 @@ export function createServer() {
    * @returns {Object} App instance (for chaining)
    */
   function tool(name, handler) {
-    if (typeof handler !== 'function') {
+    if (typeof handler !== "function") {
       throw new Error(`Tool handler for "${name}" must be a function`);
     }
 
@@ -167,7 +167,7 @@ export function createServer() {
    * @returns {Object} App instance (for chaining)
    */
   function resource(uri, handler) {
-    if (typeof handler !== 'function') {
+    if (typeof handler !== "function") {
       throw new Error(`Resource handler for "${uri}" must be a function`);
     }
 
@@ -182,7 +182,7 @@ export function createServer() {
    * @returns {Object} App instance (for chaining)
    */
   function prompt(name, handler) {
-    if (typeof handler !== 'function') {
+    if (typeof handler !== "function") {
       throw new Error(`Prompt handler for "${name}" must be a function`);
     }
 
@@ -199,7 +199,7 @@ export function createServer() {
     const toolsList = Array.from(tools.entries()).map(([name, handler]) => {
       const tool = {
         name,
-        description: handler.description || '',
+        description: handler.description || "",
         inputSchema: buildInputSchema(handler.input),
       };
 
@@ -224,7 +224,7 @@ export function createServer() {
     const { name, arguments: args } = params;
 
     if (!name) {
-      throw new Error('Tool name is required');
+      throw new Error("Tool name is required");
     }
 
     const handler = tools.get(name);
@@ -234,7 +234,7 @@ export function createServer() {
 
     // Validate arguments exist
     if (args === undefined || args === null) {
-      throw new Error('Tool arguments are required');
+      throw new Error("Tool arguments are required");
     }
 
     // Sanitize arguments to prevent prototype pollution
@@ -251,9 +251,10 @@ export function createServer() {
       function isGeneratorFunction(fn) {
         if (!fn || !fn.constructor) return false;
         const name = fn.constructor.name;
-        if (name === 'GeneratorFunction' || name === 'AsyncGeneratorFunction') return true;
+        if (name === "GeneratorFunction" || name === "AsyncGeneratorFunction")
+          return true;
         const proto = Object.getPrototypeOf(fn);
-        return proto && proto[Symbol.toStringTag] === 'GeneratorFunction';
+        return proto && proto[Symbol.toStringTag] === "GeneratorFunction";
       }
 
       const isGenerator = isGeneratorFunction(handler);
@@ -268,23 +269,22 @@ export function createServer() {
       const result = await handler(sanitizedArgs, ask);
 
       // Wrap result based on type
-      if (typeof result === 'string') {
+      if (typeof result === "string") {
         return {
-          content: [{ type: 'text', text: result }],
+          content: [{ type: "text", text: result }],
         };
       }
 
       // For objects/arrays, serialize safely
       const serialized = safeSerialize(result);
       return {
-        content: [{ type: 'text', text: serialized }],
+        content: [{ type: "text", text: serialized }],
       };
-
     } catch (error) {
       // Return error as content with isError flag
       const sanitized = sanitizeError(error);
       return {
-        content: [{ type: 'text', text: sanitized }],
+        content: [{ type: "text", text: sanitized }],
         isError: true,
       };
     }
@@ -320,7 +320,7 @@ export function createServer() {
         // Enforce max yields guardrail
         if (yieldCount > PROGRESS_DEFAULTS.maxYields) {
           throw new Error(
-            `Generator exceeded maximum yields (${PROGRESS_DEFAULTS.maxYields})`
+            `Generator exceeded maximum yields (${PROGRESS_DEFAULTS.maxYields})`,
           );
         }
 
@@ -328,13 +328,13 @@ export function createServer() {
         const elapsed = Date.now() - startTime;
         if (elapsed > PROGRESS_DEFAULTS.maxExecutionTime) {
           throw new Error(
-            `Generator exceeded maximum execution time (${PROGRESS_DEFAULTS.maxExecutionTime}ms)`
+            `Generator exceeded maximum execution time (${PROGRESS_DEFAULTS.maxExecutionTime}ms)`,
           );
         }
 
         // Check if yielded value is a progress notification
         const value = iterResult.value;
-        if (value && typeof value === 'object' && value.type === 'progress') {
+        if (value && typeof value === "object" && value.type === "progress") {
           // Store progress notification
           // In streaming mode, would send via progressToken
           if (progressToken) {
@@ -352,21 +352,20 @@ export function createServer() {
       // Return final result from generator's return value (not last yielded value)
       const finalResult = iterResult.value;
 
-      if (typeof finalResult === 'string') {
+      if (typeof finalResult === "string") {
         return {
-          content: [{ type: 'text', text: finalResult }],
+          content: [{ type: "text", text: finalResult }],
         };
       }
 
       const serialized = safeSerialize(finalResult);
       return {
-        content: [{ type: 'text', text: serialized }],
+        content: [{ type: "text", text: serialized }],
       };
-
     } catch (error) {
       const sanitized = sanitizeError(error);
       return {
-        content: [{ type: 'text', text: sanitized }],
+        content: [{ type: "text", text: sanitized }],
         isError: true,
       };
     }
@@ -384,8 +383,8 @@ export function createServer() {
       .map(([uri, handler]) => ({
         uri,
         name: handler.name || uri,
-        description: handler.description || '',
-        mimeType: handler.mimeType || 'text/plain',
+        description: handler.description || "",
+        mimeType: handler.mimeType || "text/plain",
       }));
 
     const { items, nextCursor } = paginate(resourcesList, params.cursor);
@@ -408,8 +407,8 @@ export function createServer() {
       .map(([uriTemplate, handler]) => ({
         uriTemplate,
         name: handler.name || uriTemplate,
-        description: handler.description || '',
-        mimeType: handler.mimeType || 'text/plain',
+        description: handler.description || "",
+        mimeType: handler.mimeType || "text/plain",
       }));
 
     const { items, nextCursor } = paginate(templatesList, params.cursor);
@@ -429,12 +428,14 @@ export function createServer() {
     const { uri } = params;
 
     if (!uri) {
-      throw new Error('Resource URI is required');
+      throw new Error("Resource URI is required");
     }
 
     // Validate URI scheme (prevent dangerous schemes like file://, javascript:, data:)
     if (!validateUriScheme(uri)) {
-      throw new Error(`Invalid URI scheme: only http:// and https:// are allowed`);
+      throw new Error(
+        `Invalid URI scheme: only http:// and https:// are allowed`,
+      );
     }
 
     // Canonicalize path to prevent traversal attacks
@@ -474,42 +475,49 @@ export function createServer() {
       const result = await handler(sanitizedParams, ask);
 
       // Wrap result as resource content
-      const mimeType = handler.mimeType || 'text/plain';
+      const mimeType = handler.mimeType || "text/plain";
 
-      if (typeof result === 'string') {
+      if (typeof result === "string") {
         return {
-          contents: [{
-            uri,
-            mimeType,
-            text: result,
-          }],
+          contents: [
+            {
+              uri,
+              mimeType,
+              text: result,
+            },
+          ],
         };
       }
 
       // For binary data (Buffer, Uint8Array)
       if (result instanceof Buffer || result instanceof Uint8Array) {
-        const base64 = Buffer.from(result).toString('base64');
+        const base64 = Buffer.from(result).toString("base64");
         return {
-          contents: [{
-            uri,
-            mimeType,
-            blob: base64,
-          }],
+          contents: [
+            {
+              uri,
+              mimeType,
+              blob: base64,
+            },
+          ],
         };
       }
 
       // For objects, serialize as JSON
       const serialized = safeSerialize(result);
       return {
-        contents: [{
-          uri,
-          mimeType: 'application/json',
-          text: serialized,
-        }],
+        contents: [
+          {
+            uri,
+            mimeType: "application/json",
+            text: serialized,
+          },
+        ],
       };
-
     } catch (error) {
-      throw new Error(`Failed to read resource "${uri}": ${sanitizeError(error)}`);
+      throw new Error(
+        `Failed to read resource "${uri}": ${sanitizeError(error)}`,
+      );
     }
   }
 
@@ -524,14 +532,14 @@ export function createServer() {
       const argumentsList = handler.input
         ? Object.entries(handler.input).map(([argName, schema]) => ({
             name: argName,
-            description: schema.description || '',
+            description: schema.description || "",
             required: schema._required === true,
           }))
         : [];
 
       return {
         name,
-        description: handler.description || '',
+        description: handler.description || "",
         arguments: argumentsList,
       };
     });
@@ -553,7 +561,7 @@ export function createServer() {
     const { name, arguments: args } = params;
 
     if (!name) {
-      throw new Error('Prompt name is required');
+      throw new Error("Prompt name is required");
     }
 
     const handler = prompts.get(name);
@@ -572,15 +580,17 @@ export function createServer() {
       const result = await handler(sanitizedArgs, ask);
 
       // If handler returns a string, wrap as user message
-      if (typeof result === 'string') {
+      if (typeof result === "string") {
         return {
-          messages: [{
-            role: 'user',
-            content: {
-              type: 'text',
-              text: result,
+          messages: [
+            {
+              role: "user",
+              content: {
+                type: "text",
+                text: result,
+              },
             },
-          }],
+          ],
         };
       }
 
@@ -597,17 +607,20 @@ export function createServer() {
       // Otherwise serialize and wrap as user message
       const serialized = safeSerialize(result);
       return {
-        messages: [{
-          role: 'user',
-          content: {
-            type: 'text',
-            text: serialized,
+        messages: [
+          {
+            role: "user",
+            content: {
+              type: "text",
+              text: serialized,
+            },
           },
-        }],
+        ],
       };
-
     } catch (error) {
-      throw new Error(`Failed to get prompt "${name}": ${sanitizeError(error)}`);
+      throw new Error(
+        `Failed to get prompt "${name}": ${sanitizeError(error)}`,
+      );
     }
   }
 
@@ -630,10 +643,10 @@ export function createServer() {
 
     // Determine which registry to use based on ref type
     let registeredItems;
-    if (ref.type === 'ref/prompt-argument') {
+    if (ref.type === "ref/prompt-argument") {
       // Convert prompts Map to object for generateCompletions
       registeredItems = Object.fromEntries(prompts);
-    } else if (ref.type === 'ref/resource') {
+    } else if (ref.type === "ref/resource") {
       // Convert resources Map to object for generateCompletions
       registeredItems = Object.fromEntries(resources);
     } else {
@@ -657,7 +670,7 @@ export function createServer() {
     const { level } = params;
 
     if (!level) {
-      throw new Error('Log level is required');
+      throw new Error("Log level is required");
     }
 
     setLogLevel(level);
@@ -674,40 +687,40 @@ export function createServer() {
     const { method, params, _meta } = request;
 
     switch (method) {
-      case 'tools/list':
+      case "tools/list":
         return handleToolsList(params);
 
-      case 'tools/call':
+      case "tools/call":
         return await handleToolsCall(params, _meta);
 
-      case 'resources/list':
+      case "resources/list":
         return handleResourcesList(params);
 
-      case 'resources/read':
+      case "resources/read":
         return await handleResourcesRead(params);
 
-      case 'resources/templates/list':
+      case "resources/templates/list":
         return handleResourceTemplatesList(params);
 
-      case 'prompts/list':
+      case "prompts/list":
         return handlePromptsList(params);
 
-      case 'prompts/get':
+      case "prompts/get":
         return await handlePromptsGet(params);
 
-      case 'notifications/cancelled':
+      case "notifications/cancelled":
         // Silent acknowledgment - no response for notifications
         return null;
 
-      case 'completion/complete':
+      case "completion/complete":
         return handleCompletionComplete(params);
 
-      case 'logging/setLevel':
+      case "logging/setLevel":
         return handleLoggingSetLevel(params);
 
       default: {
         {
-          const error = new Error('Method not found');
+          const error = new Error("Method not found");
           error.code = -32601;
           throw error;
         }
@@ -724,20 +737,20 @@ export function createServer() {
    */
   async function fetch(request, _env, _ctx) {
     // Only accept POST requests
-    if (request.method !== 'POST') {
+    if (request.method !== "POST") {
       return new Response(
         JSON.stringify({
-          jsonrpc: '2.0',
+          jsonrpc: "2.0",
           error: {
             code: -32600,
-            message: 'Invalid Request - Only POST method is supported',
+            message: "Invalid Request - Only POST method is supported",
           },
           id: null,
         }),
         {
           status: 405,
           headers: SECURITY_HEADERS,
-        }
+        },
       );
     }
 
@@ -757,35 +770,35 @@ export function createServer() {
       // Parse error
       return new Response(
         JSON.stringify({
-          jsonrpc: '2.0',
+          jsonrpc: "2.0",
           error: {
             code: -32700,
-            message: 'Parse error - Invalid JSON',
+            message: "Parse error - Invalid JSON",
           },
           id: null,
         }),
         {
           status: 400,
           headers: SECURITY_HEADERS,
-        }
+        },
       );
     }
 
     // Validate JSON-RPC structure
-    if (!rpcRequest.method || typeof rpcRequest.method !== 'string') {
+    if (!rpcRequest.method || typeof rpcRequest.method !== "string") {
       return new Response(
         JSON.stringify({
-          jsonrpc: '2.0',
+          jsonrpc: "2.0",
           error: {
             code: -32600,
-            message: 'Invalid Request - Missing or invalid method',
+            message: "Invalid Request - Missing or invalid method",
           },
           id: rpcRequest.id || null,
         }),
         {
           status: 400,
           headers: SECURITY_HEADERS,
-        }
+        },
       );
     }
 
@@ -804,13 +817,13 @@ export function createServer() {
       // For now, just clear them since we can't send them in stateless HTTP mode
 
       // For notifications (no id), return 204 No Content
-      if (!('id' in rpcRequest)) {
+      if (!("id" in rpcRequest)) {
         return new Response(null, { status: 204 });
       }
 
       // Build response object
       const responseBody = {
-        jsonrpc: '2.0',
+        jsonrpc: "2.0",
         id: rpcRequest.id,
         result,
       };
@@ -819,35 +832,34 @@ export function createServer() {
       validateResponseSize(responseBody);
 
       // Return JSON-RPC success response
-      return new Response(
-        JSON.stringify(responseBody),
-        {
-          status: 200,
-          headers: SECURITY_HEADERS,
-        }
-      );
-
+      return new Response(JSON.stringify(responseBody), {
+        status: 200,
+        headers: SECURITY_HEADERS,
+      });
     } catch (error) {
       // Check if error is JSON-RPC error (has code and message)
-      const isJsonRpcError = error && typeof error === 'object' && 'code' in error;
+      const isJsonRpcError =
+        error && typeof error === "object" && "code" in error;
 
       const rpcError = isJsonRpcError
         ? error
         : {
             code: -32603,
-            message: sanitizeError(error instanceof Error ? error : new Error(String(error))),
+            message: sanitizeError(
+              error instanceof Error ? error : new Error(String(error)),
+            ),
           };
 
       return new Response(
         JSON.stringify({
-          jsonrpc: '2.0',
+          jsonrpc: "2.0",
           id: rpcRequest.id || null,
           error: rpcError,
         }),
         {
           status: 200, // JSON-RPC errors use 200 status with error object
           headers: SECURITY_HEADERS,
-        }
+        },
       );
     }
   }

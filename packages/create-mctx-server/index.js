@@ -1,15 +1,17 @@
 #!/usr/bin/env node
-import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'fs';
-import { join } from 'path';
+import { mkdirSync, writeFileSync, existsSync, readFileSync } from "fs";
+import { join } from "path";
 
 // Read version from own package.json
-const selfPkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
+const selfPkg = JSON.parse(
+  readFileSync(new URL("./package.json", import.meta.url), "utf8"),
+);
 const version = selfPkg.version;
 
 const projectName = process.argv[2];
 
 if (!projectName) {
-  console.error('Usage: npm create mctx-server <project-name>');
+  console.error("Usage: npm create mctx-server <project-name>");
   process.exit(1);
 }
 
@@ -24,23 +26,24 @@ mkdirSync(projectName, { recursive: true });
 // Generate package.json
 const packageJson = {
   name: projectName,
-  version: '0.0.1',
-  type: 'module',
+  version: "0.0.1",
+  type: "module",
   scripts: {
-    dev: 'npx mctx-dev index.js',
-    build: "node --experimental-sea-config sea-config.json || echo 'Build step placeholder'",
+    dev: "npx mctx-dev index.js",
+    build:
+      "node --experimental-sea-config sea-config.json || echo 'Build step placeholder'",
   },
   dependencies: {
-    '@mctx-ai/mcp-server': `^${version}`,
+    "@mctx-ai/mcp-server": `^${version}`,
   },
   devDependencies: {
-    '@mctx-ai/mcp-dev': `^${version}`,
+    "@mctx-ai/mcp-dev": `^${version}`,
   },
 };
 
 writeFileSync(
-  join(projectName, 'package.json'),
-  JSON.stringify(packageJson, null, 2) + '\n'
+  join(projectName, "package.json"),
+  JSON.stringify(packageJson, null, 2) + "\n",
 );
 
 // Generate index.js
@@ -63,17 +66,17 @@ app.tool('greet', greet);
 export default app;
 `;
 
-writeFileSync(join(projectName, 'index.js'), indexJs);
+writeFileSync(join(projectName, "index.js"), indexJs);
 
 // Generate mctx.json
 const mctxJson = {
   name: projectName,
-  entrypoint: 'index.js',
+  entrypoint: "index.js",
 };
 
 writeFileSync(
-  join(projectName, 'mctx.json'),
-  JSON.stringify(mctxJson, null, 2) + '\n'
+  join(projectName, "mctx.json"),
+  JSON.stringify(mctxJson, null, 2) + "\n",
 );
 
 // Generate .gitignore
@@ -81,7 +84,7 @@ const gitignore = `node_modules/
 dist/
 `;
 
-writeFileSync(join(projectName, '.gitignore'), gitignore);
+writeFileSync(join(projectName, ".gitignore"), gitignore);
 
 // Generate README.md
 const readme = `# ${projectName}
@@ -121,7 +124,7 @@ app.tool('my-tool', myTool);
 - [MCP Specification](https://modelcontextprotocol.io)
 `;
 
-writeFileSync(join(projectName, 'README.md'), readme);
+writeFileSync(join(projectName, "README.md"), readme);
 
 // Success message
 console.log(`✓ Created ${projectName}

@@ -14,44 +14,62 @@
 // IMPORTANT: Order matters - more specific patterns must come before generic patterns
 const SECRET_PATTERNS = [
   // AWS Access Keys (AKIA + 16 alphanumeric chars)
-  { regex: /AKIA[0-9A-Z]{16}/g, label: 'REDACTED_AWS_KEY' },
+  { regex: /AKIA[0-9A-Z]{16}/g, label: "REDACTED_AWS_KEY" },
 
   // JWT tokens (three base64url segments separated by dots)
-  { regex: /eyJ[a-zA-Z0-9_-]+\.eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+/g, label: 'REDACTED_JWT' },
+  {
+    regex: /eyJ[a-zA-Z0-9_-]+\.eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+/g,
+    label: "REDACTED_JWT",
+  },
 
   // Database connection strings
-  { regex: /(?:mongodb|postgres|mysql|mariadb|mssql|oracle):\/\/[^\s]+/gi, label: 'REDACTED_CONNECTION_STRING' },
+  {
+    regex: /(?:mongodb|postgres|mysql|mariadb|mssql|oracle):\/\/[^\s]+/gi,
+    label: "REDACTED_CONNECTION_STRING",
+  },
 
   // Bearer tokens
-  { regex: /Bearer\s+[a-zA-Z0-9_\-.]+/gi, label: 'Bearer [REDACTED]' },
+  { regex: /Bearer\s+[a-zA-Z0-9_\-.]+/gi, label: "Bearer [REDACTED]" },
 
   // GitHub tokens (personal access tokens, OAuth, app tokens, refresh tokens)
   // MUST come before generic API key pattern (which would match "token:")
   // GitHub tokens: gh[pors]_ prefix + 33-40 alphanumeric chars
   // Note: gh[pors] matches ghp, gho, ghr, ghs
-  { regex: /gh[pors]_[a-zA-Z0-9]{33,40}/g, label: 'REDACTED_GITHUB_TOKEN' },
+  { regex: /gh[pors]_[a-zA-Z0-9]{33,40}/g, label: "REDACTED_GITHUB_TOKEN" },
 
   // Slack tokens (format: xoxb-numbers-alphanumeric or similar hyphen-separated patterns)
   // MUST come before generic API key pattern (which would match "token:")
-  { regex: /xox[bpas]-[a-zA-Z0-9]+-[a-zA-Z0-9-]+/g, label: 'REDACTED_SLACK_TOKEN' },
+  {
+    regex: /xox[bpas]-[a-zA-Z0-9]+-[a-zA-Z0-9-]+/g,
+    label: "REDACTED_SLACK_TOKEN",
+  },
 
   // Private keys (RSA, EC, DSA)
-  { regex: /-----BEGIN (?:RSA |EC |DSA )?PRIVATE KEY-----[\s\S]*?-----END (?:RSA |EC |DSA )?PRIVATE KEY-----/g, label: 'REDACTED_PRIVATE_KEY' },
+  {
+    regex:
+      /-----BEGIN (?:RSA |EC |DSA )?PRIVATE KEY-----[\s\S]*?-----END (?:RSA |EC |DSA )?PRIVATE KEY-----/g,
+    label: "REDACTED_PRIVATE_KEY",
+  },
 
   // GCP API keys (AIzaSy prefix + variable length alphanumeric/special chars)
-  { regex: /AIzaSy[0-9A-Za-z\-_]{21,}/g, label: 'REDACTED_GCP_KEY' },
+  { regex: /AIzaSy[0-9A-Za-z\-_]{21,}/g, label: "REDACTED_GCP_KEY" },
 
   // Azure connection strings
-  { regex: /AccountKey=[a-zA-Z0-9+/=]{40,}/g, label: 'REDACTED_AZURE_KEY' },
+  { regex: /AccountKey=[a-zA-Z0-9+/=]{40,}/g, label: "REDACTED_AZURE_KEY" },
 
   // Generic API key patterns (key=, token=, secret=, password= followed by value)
   // ReDoS mitigation: bounded whitespace quantifiers (max 10 instead of unbounded \s*)
   // MUST come LAST to avoid matching more specific token patterns above
-  { regex: /(?:api[_-]?key|token|secret|password)\s{0,10}[=:]\s{0,10}['"]?([a-zA-Z0-9_.-]{16,})['"]?/gi, label: (match) => match.replace(/(['"]?)[a-zA-Z0-9_.-]{16,}(['"]?)/, '$1[REDACTED]$2') },
+  {
+    regex:
+      /(?:api[_-]?key|token|secret|password)\s{0,10}[=:]\s{0,10}['"]?([a-zA-Z0-9_.-]{16,})['"]?/gi,
+    label: (match) =>
+      match.replace(/(['"]?)[a-zA-Z0-9_.-]{16,}(['"]?)/, "$1[REDACTED]$2"),
+  },
 ];
 
 // Dangerous URI schemes that enable injection attacks
-const DANGEROUS_SCHEMES = ['file', 'javascript', 'data', 'vbscript', 'about'];
+const DANGEROUS_SCHEMES = ["file", "javascript", "data", "vbscript", "about"];
 
 /**
  * Sanitize error messages for safe output
@@ -66,13 +84,13 @@ const DANGEROUS_SCHEMES = ['file', 'javascript', 'data', 'vbscript', 'about'];
  * @returns {string} Sanitized error message
  */
 export function sanitizeError(error, isProduction = true) {
-  if (!error) return 'Unknown error';
+  if (!error) return "Unknown error";
 
   let message = error.message || String(error);
 
   // Redact secrets from message
   for (const pattern of SECRET_PATTERNS) {
-    if (typeof pattern.label === 'function') {
+    if (typeof pattern.label === "function") {
       message = message.replace(pattern.regex, pattern.label);
     } else {
       message = message.replace(pattern.regex, `[${pattern.label}]`);
@@ -86,7 +104,7 @@ export function sanitizeError(error, isProduction = true) {
 
     // Redact secrets from stack trace
     for (const pattern of SECRET_PATTERNS) {
-      if (typeof pattern.label === 'function') {
+      if (typeof pattern.label === "function") {
         stack = stack.replace(pattern.regex, pattern.label);
       } else {
         stack = stack.replace(pattern.regex, `[${pattern.label}]`);
@@ -113,10 +131,13 @@ export function sanitizeError(error, isProduction = true) {
 export function validateRequestSize(body, maxSize = 1048576) {
   if (!body) return;
 
-  const size = typeof body === 'string' ? body.length : JSON.stringify(body).length;
+  const size =
+    typeof body === "string" ? body.length : JSON.stringify(body).length;
 
   if (size > maxSize) {
-    throw new Error(`Request body too large: ${size} bytes (max: ${maxSize} bytes)`);
+    throw new Error(
+      `Request body too large: ${size} bytes (max: ${maxSize} bytes)`,
+    );
   }
 }
 
@@ -134,10 +155,13 @@ export function validateRequestSize(body, maxSize = 1048576) {
 export function validateResponseSize(body, maxSize = 1048576) {
   if (!body) return;
 
-  const size = typeof body === 'string' ? body.length : JSON.stringify(body).length;
+  const size =
+    typeof body === "string" ? body.length : JSON.stringify(body).length;
 
   if (size > maxSize) {
-    throw new Error(`Response body too large: ${size} bytes (max: ${maxSize} bytes)`);
+    throw new Error(
+      `Response body too large: ${size} bytes (max: ${maxSize} bytes)`,
+    );
   }
 }
 
@@ -153,10 +177,12 @@ export function validateResponseSize(body, maxSize = 1048576) {
  * @throws {Error} If string exceeds maxLength
  */
 export function validateStringInput(value, maxLength = 10485760) {
-  if (typeof value !== 'string') return;
+  if (typeof value !== "string") return;
 
   if (value.length > maxLength) {
-    throw new Error(`String input too long: ${value.length} chars (max: ${maxLength} chars)`);
+    throw new Error(
+      `String input too long: ${value.length} chars (max: ${maxLength} chars)`,
+    );
   }
 }
 
@@ -172,8 +198,8 @@ export function validateStringInput(value, maxLength = 10485760) {
  * @param {string[]} allowedSchemes - Allowed schemes (default: ['http', 'https'])
  * @returns {boolean} True if URI scheme is allowed
  */
-export function validateUriScheme(uri, allowedSchemes = ['http', 'https']) {
-  if (!uri || typeof uri !== 'string') return false;
+export function validateUriScheme(uri, allowedSchemes = ["http", "https"]) {
+  if (!uri || typeof uri !== "string") return false;
 
   // Extract scheme (characters before first colon)
   const schemeMatch = uri.match(/^([a-z][a-z0-9+.-]*?):/i);
@@ -187,7 +213,7 @@ export function validateUriScheme(uri, allowedSchemes = ['http', 'https']) {
   }
 
   // Check if scheme is in allowlist
-  return allowedSchemes.some(allowed => allowed.toLowerCase() === scheme);
+  return allowedSchemes.some((allowed) => allowed.toLowerCase() === scheme);
 }
 
 /**
@@ -206,8 +232,8 @@ export function validateUriScheme(uri, allowedSchemes = ['http', 'https']) {
  * @throws {Error} If path traversal detected
  */
 export function canonicalizePath(uri) {
-  if (!uri || typeof uri !== 'string') {
-    throw new Error('Invalid URI: must be a non-empty string');
+  if (!uri || typeof uri !== "string") {
+    throw new Error("Invalid URI: must be a non-empty string");
   }
 
   // Decode URI repeatedly (max 3 iterations) to catch double/triple encoding
@@ -224,33 +250,48 @@ export function canonicalizePath(uri) {
   }
 
   // Detect null byte injection (both encoded and literal)
-  if (decoded.includes('%00') || decoded.includes('\0')) {
-    throw new Error('Path traversal detected: null byte injection is not allowed');
+  if (decoded.includes("%00") || decoded.includes("\0")) {
+    throw new Error(
+      "Path traversal detected: null byte injection is not allowed",
+    );
   }
 
   // Detect Unicode variants of dots and slashes
   // \u002e = '.', \u002f = '/'
-  if (decoded.includes('\u002e\u002e\u002f') || decoded.includes('\u002e\u002e/') || decoded.includes('..\u002f')) {
-    throw new Error('Path traversal detected: Unicode-encoded ../ sequences are not allowed');
+  if (
+    decoded.includes("\u002e\u002e\u002f") ||
+    decoded.includes("\u002e\u002e/") ||
+    decoded.includes("..\u002f")
+  ) {
+    throw new Error(
+      "Path traversal detected: Unicode-encoded ../ sequences are not allowed",
+    );
   }
 
   // Check fully decoded string for literal path traversal attempts
-  if (decoded.includes('../') || decoded.includes('..\\')) {
-    throw new Error('Path traversal detected: ../ sequences are not allowed');
+  if (decoded.includes("../") || decoded.includes("..\\")) {
+    throw new Error("Path traversal detected: ../ sequences are not allowed");
   }
 
   // Check for mixed encoding in decoded string (case-insensitive)
   const lowerDecoded = decoded.toLowerCase();
-  if (lowerDecoded.includes('%2e%2e%2f') || lowerDecoded.includes('%2e%2e/') || lowerDecoded.includes('..%2f') ||
-      lowerDecoded.includes('%2e.') || lowerDecoded.includes('.%2e')) {
-    throw new Error('Path traversal detected: encoded ../ sequences are not allowed');
+  if (
+    lowerDecoded.includes("%2e%2e%2f") ||
+    lowerDecoded.includes("%2e%2e/") ||
+    lowerDecoded.includes("..%2f") ||
+    lowerDecoded.includes("%2e.") ||
+    lowerDecoded.includes(".%2e")
+  ) {
+    throw new Error(
+      "Path traversal detected: encoded ../ sequences are not allowed",
+    );
   }
 
   // Normalize path separators
-  let normalized = decoded.replace(/\\/g, '/');
+  let normalized = decoded.replace(/\\/g, "/");
 
   // Remove duplicate slashes
-  normalized = normalized.replace(/\/+/g, '/');
+  normalized = normalized.replace(/\/+/g, "/");
 
   return normalized;
 }
@@ -270,13 +311,13 @@ export function canonicalizePath(uri) {
  */
 export function sanitizeInput(obj) {
   // Handle non-objects (primitives, null, undefined)
-  if (obj === null || typeof obj !== 'object') {
+  if (obj === null || typeof obj !== "object") {
     return obj;
   }
 
   // Handle arrays
   if (Array.isArray(obj)) {
-    return obj.map(item => sanitizeInput(item));
+    return obj.map((item) => sanitizeInput(item));
   }
 
   // Handle objects - create clean copy
@@ -284,7 +325,7 @@ export function sanitizeInput(obj) {
 
   for (const key in obj) {
     // Skip prototype pollution vectors
-    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+    if (key === "__proto__" || key === "constructor" || key === "prototype") {
       continue;
     }
 

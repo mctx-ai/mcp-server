@@ -48,12 +48,12 @@ const DEFAULT_TIMEOUT = 30000;
  */
 export function createAsk(sendRequest, clientCapabilities) {
   // Validate inputs
-  if (typeof sendRequest !== 'function') {
-    throw new Error('createAsk() requires sendRequest to be a function');
+  if (typeof sendRequest !== "function") {
+    throw new Error("createAsk() requires sendRequest to be a function");
   }
 
-  if (!clientCapabilities || typeof clientCapabilities !== 'object') {
-    throw new Error('createAsk() requires clientCapabilities object');
+  if (!clientCapabilities || typeof clientCapabilities !== "object") {
+    throw new Error("createAsk() requires clientCapabilities object");
   }
 
   // Check if client supports sampling
@@ -73,28 +73,28 @@ export function createAsk(sendRequest, clientCapabilities) {
     let requestParams;
 
     // Simple string prompt - wrap as messages array
-    if (typeof promptOrOptions === 'string') {
+    if (typeof promptOrOptions === "string") {
       requestParams = {
         messages: [
           {
-            role: 'user',
+            role: "user",
             content: {
-              type: 'text',
+              type: "text",
               text: promptOrOptions,
             },
           },
         ],
       };
-    } else if (promptOrOptions && typeof promptOrOptions === 'object') {
+    } else if (promptOrOptions && typeof promptOrOptions === "object") {
       // Advanced options object
       requestParams = { ...promptOrOptions };
 
       // Validate required fields
       if (!requestParams.messages || !Array.isArray(requestParams.messages)) {
-        throw new Error('ask() options must include messages array');
+        throw new Error("ask() options must include messages array");
       }
     } else {
-      throw new Error('ask() requires a string prompt or options object');
+      throw new Error("ask() requires a string prompt or options object");
     }
 
     // Create timeout promise
@@ -106,18 +106,21 @@ export function createAsk(sendRequest, clientCapabilities) {
 
     // Send sampling request with timeout
     try {
-      const responsePromise = sendRequest('sampling/createMessage', requestParams);
+      const responsePromise = sendRequest(
+        "sampling/createMessage",
+        requestParams,
+      );
       const response = await Promise.race([responsePromise, timeoutPromise]);
 
       // Extract content from response
       if (!response || !response.content) {
-        throw new Error('Invalid sampling response: missing content');
+        throw new Error("Invalid sampling response: missing content");
       }
 
       return response.content;
     } catch (error) {
       // Re-throw with better context
-      if (error.message.includes('timed out')) {
+      if (error.message.includes("timed out")) {
         throw error;
       }
 

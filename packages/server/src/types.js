@@ -19,9 +19,10 @@
  * @returns {Object} JSON Schema object
  */
 function string(options = {}) {
-  const schema = { type: 'string' };
+  const schema = { type: "string" };
 
-  if (options.description !== undefined) schema.description = options.description;
+  if (options.description !== undefined)
+    schema.description = options.description;
   if (options.enum !== undefined) schema.enum = options.enum;
   if (options.default !== undefined) schema.default = options.default;
   if (options.minLength !== undefined) schema.minLength = options.minLength;
@@ -47,9 +48,10 @@ function string(options = {}) {
  * @returns {Object} JSON Schema object
  */
 function number(options = {}) {
-  const schema = { type: 'number' };
+  const schema = { type: "number" };
 
-  if (options.description !== undefined) schema.description = options.description;
+  if (options.description !== undefined)
+    schema.description = options.description;
   if (options.enum !== undefined) schema.enum = options.enum;
   if (options.default !== undefined) schema.default = options.default;
   if (options.min !== undefined) schema.minimum = options.min;
@@ -69,9 +71,10 @@ function number(options = {}) {
  * @returns {Object} JSON Schema object
  */
 function boolean(options = {}) {
-  const schema = { type: 'boolean' };
+  const schema = { type: "boolean" };
 
-  if (options.description !== undefined) schema.description = options.description;
+  if (options.description !== undefined)
+    schema.description = options.description;
   if (options.default !== undefined) schema.default = options.default;
 
   if (options.required === true) schema._required = true;
@@ -89,9 +92,10 @@ function boolean(options = {}) {
  * @returns {Object} JSON Schema object
  */
 function array(options = {}) {
-  const schema = { type: 'array' };
+  const schema = { type: "array" };
 
-  if (options.description !== undefined) schema.description = options.description;
+  if (options.description !== undefined)
+    schema.description = options.description;
   if (options.default !== undefined) schema.default = options.default;
   if (options.items !== undefined) {
     // Clean _required metadata from items schema
@@ -114,9 +118,10 @@ function array(options = {}) {
  * @returns {Object} JSON Schema object
  */
 function object(options = {}) {
-  const schema = { type: 'object' };
+  const schema = { type: "object" };
 
-  if (options.description !== undefined) schema.description = options.description;
+  if (options.description !== undefined)
+    schema.description = options.description;
   if (options.default !== undefined) schema.default = options.default;
 
   // Handle nested properties
@@ -127,7 +132,7 @@ function object(options = {}) {
   }
 
   if (options.additionalProperties !== undefined) {
-    if (typeof options.additionalProperties === 'boolean') {
+    if (typeof options.additionalProperties === "boolean") {
       schema.additionalProperties = options.additionalProperties;
     } else {
       // Clean metadata from additionalProperties schema
@@ -147,7 +152,7 @@ function object(options = {}) {
  * @returns {{properties: Object, required: Array<string>}} Cleaned properties and required array
  */
 function buildProperties(properties) {
-  if (!properties || typeof properties !== 'object') {
+  if (!properties || typeof properties !== "object") {
     return { properties: {}, required: [] };
   }
 
@@ -155,7 +160,7 @@ function buildProperties(properties) {
   const required = [];
 
   for (const [key, schema] of Object.entries(properties)) {
-    if (!schema || typeof schema !== 'object') continue;
+    if (!schema || typeof schema !== "object") continue;
 
     // Extract required metadata
     if (schema._required === true) {
@@ -175,7 +180,7 @@ function buildProperties(properties) {
  * @returns {Object} Cleaned schema
  */
 function cleanMetadata(schema) {
-  if (!schema || typeof schema !== 'object') return schema;
+  if (!schema || typeof schema !== "object") return schema;
 
   // Create shallow copy
   const cleaned = { ...schema };
@@ -184,17 +189,20 @@ function cleanMetadata(schema) {
   delete cleaned._required;
 
   // Recursively clean nested schemas
-  if (cleaned.properties && typeof cleaned.properties === 'object') {
+  if (cleaned.properties && typeof cleaned.properties === "object") {
     const { properties, required } = buildProperties(cleaned.properties);
     cleaned.properties = properties;
     if (required.length > 0) cleaned.required = required;
   }
 
-  if (cleaned.items && typeof cleaned.items === 'object') {
+  if (cleaned.items && typeof cleaned.items === "object") {
     cleaned.items = cleanMetadata(cleaned.items);
   }
 
-  if (cleaned.additionalProperties && typeof cleaned.additionalProperties === 'object') {
+  if (
+    cleaned.additionalProperties &&
+    typeof cleaned.additionalProperties === "object"
+  ) {
     cleaned.additionalProperties = cleanMetadata(cleaned.additionalProperties);
   }
 
@@ -210,7 +218,7 @@ export function buildInputSchema(input) {
   // Handle null/undefined input
   if (!input) {
     return {
-      type: 'object',
+      type: "object",
       properties: {},
     };
   }
@@ -219,7 +227,7 @@ export function buildInputSchema(input) {
   const { properties, required } = buildProperties(input);
 
   const schema = {
-    type: 'object',
+    type: "object",
     properties,
   };
 

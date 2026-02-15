@@ -23,20 +23,20 @@
  * // Returns: { messages: [{ role: "user", content: {...} }, ...] }
  */
 export function conversation(builderFn) {
-  if (typeof builderFn !== 'function') {
-    throw new Error('conversation() requires a builder function');
+  if (typeof builderFn !== "function") {
+    throw new Error("conversation() requires a builder function");
   }
 
   // Create helper objects
-  const user = createRoleHelper('user');
-  const ai = createRoleHelper('assistant');
+  const user = createRoleHelper("user");
+  const ai = createRoleHelper("assistant");
 
   // Execute builder function
   const result = builderFn({ user, ai });
 
   // Validate result is array
   if (!Array.isArray(result)) {
-    throw new Error('Builder function must return an array of messages');
+    throw new Error("Builder function must return an array of messages");
   }
 
   return { messages: result };
@@ -56,14 +56,14 @@ function createRoleHelper(role) {
      * @returns {Object} MCP message object
      */
     say(text) {
-      if (typeof text !== 'string') {
+      if (typeof text !== "string") {
         throw new Error(`${role}.say() requires a string argument`);
       }
 
       return {
         role,
         content: {
-          type: 'text',
+          type: "text",
           text,
         },
       };
@@ -77,26 +77,34 @@ function createRoleHelper(role) {
      * @throws {Error} If mimeType is missing
      */
     attach(data, mimeType) {
-      if (typeof data !== 'string') {
-        throw new Error(`${role}.attach() requires base64 data as first argument`);
+      if (typeof data !== "string") {
+        throw new Error(
+          `${role}.attach() requires base64 data as first argument`,
+        );
       }
 
       if (mimeType === undefined || mimeType === null) {
-        throw new Error(`${role}.attach() requires mimeType as second argument (e.g., "image/png")`);
+        throw new Error(
+          `${role}.attach() requires mimeType as second argument (e.g., "image/png")`,
+        );
       }
 
-      if (typeof mimeType !== 'string') {
-        throw new Error(`${role}.attach() requires mimeType as second argument (e.g., "image/png")`);
+      if (typeof mimeType !== "string") {
+        throw new Error(
+          `${role}.attach() requires mimeType as second argument (e.g., "image/png")`,
+        );
       }
 
       if (!/^[a-zA-Z]+\/[a-zA-Z0-9\-+.]+$/.test(mimeType)) {
-        throw new Error(`Invalid MIME type: "${mimeType}". Expected format: type/subtype (e.g., "image/png")`);
+        throw new Error(
+          `Invalid MIME type: "${mimeType}". Expected format: type/subtype (e.g., "image/png")`,
+        );
       }
 
       return {
         role,
         content: {
-          type: 'image',
+          type: "image",
           data,
           mimeType,
         },
@@ -112,17 +120,17 @@ function createRoleHelper(role) {
      * This creates a placeholder with [embedded] text.
      */
     embed(uri) {
-      if (typeof uri !== 'string') {
+      if (typeof uri !== "string") {
         throw new Error(`${role}.embed() requires a URI string`);
       }
 
       return {
         role,
         content: {
-          type: 'resource',
+          type: "resource",
           resource: {
             uri,
-            text: '[embedded]',
+            text: "[embedded]",
           },
         },
       };
