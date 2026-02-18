@@ -1,0 +1,5 @@
+# Default — all changes require maintainer review
+* @karlhepler
+
+# CI/CD workflow files — explicit protection
+/.github/ @karlhepler
