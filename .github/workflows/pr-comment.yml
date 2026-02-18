@@ -1,0 +1,49 @@
+name: PR Comment
+
+on:
+  pull_request:
+    types: [opened]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Generate app token
+        id: app-token
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1.12.0
+        with:
+          app-id: ${{ secrets.MCTX_BOT_APP_ID }}
+          private-key: ${{ secrets.MCTX_BOT_PRIVATE_KEY }}
+
+      - name: Post PR comment
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          COMMENT_BODY: |
+            ## Squash Merge Workflow
+
+            This repo uses **squash merging**. Each PR becomes a single commit on `main`.
+
+            **Your PR title becomes the commit subject line.** Keep it under 72 characters and follow [Conventional Commits](https://www.conventionalcommits.org) format:
+
+            ```
+            type: short description
+            ```
+
+            **Your PR description becomes the commit body.** Use it to explain the why.
+
+            ### Version Bumps
+
+            | Prefix | Release |
+            |--------|---------|
+            | `feat:` | Minor (0.**X**.0) |
+            | `fix:`, `perf:`, `revert:` | Patch (0.0.**X**) |
+            | `chore:`, `docs:`, `ci:`, `test:`, `refactor:`, `style:`, `build:` | No release |
+            | `BREAKING CHANGE` or `feat!:`, `fix!:`, etc. | Major (**X**.0.0) |
+
+            > Note: commit types like `chore:` and `docs:` do **not** trigger a release in this repo.
+        run: gh pr comment "$PR_URL" --body "$COMMENT_BODY"
