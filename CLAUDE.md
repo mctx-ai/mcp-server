@@ -204,6 +204,8 @@ npx vitest run -t "validates URI templates correctly"
 
 No manual version bumps or changelog edits required.
 
+**Authentication:** npm publishing uses OIDC trusted publishing — no `NPM_TOKEN` secret. GitHub Actions proves its identity directly to npm via OpenID Connect. Trusted publishers are configured on npmjs.com for each package.
+
 ---
 
 ## CI/CD
