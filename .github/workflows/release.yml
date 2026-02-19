@@ -45,15 +45,14 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          registry-url: https://registry.npmjs.org
       - run: npm ci
       - run: npm run build
+      - name: Upgrade npm for OIDC support
+        run: npm install -g npm@11.10.0
       - name: Release
         run: npm run release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   post-publish-check:
     needs: release
