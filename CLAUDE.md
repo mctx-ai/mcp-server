@@ -34,13 +34,15 @@ Note: npm is included with Node.js, so no additional setup action is required.
 
 ## Monorepo Structure
 
-Three npm workspaces in `packages/`:
+Three npm workspaces in `packages/` (defined via `"workspaces": ["packages/*"]` in root `package.json`):
 
-- **`@mctx-ai/mcp-server`** — Core framework (zero runtime dependencies)
-- **`@mctx-ai/mcp-dev`** — Dev server with hot reload and request logging
-- **`create-mctx-server`** — CLI scaffolding tool
+- **`@mctx-ai/mcp-server`** (`packages/server/`) — Core framework. Zero runtime dependencies. Exports `createServer`, `T`, `conversation`, `createProgress`, `PROGRESS_DEFAULTS`, `log`. Build is a simple `cp src/*.js src/*.d.ts dist/` (no transpilation).
+- **`@mctx-ai/mcp-dev`** (`packages/dev/`) — Dev server with hot reload and request logging. Peer-depends on `@mctx-ai/mcp-server`. Uses Node.js built-in test runner (`node --test`), not Vitest. Lint is not yet configured.
+- **`create-mctx-server`** (`packages/create-mctx-server/`) — CLI scaffolding tool (`npm create mctx-server <name>`). Generates a new project with `@mctx-ai/mcp-server` + `@mctx-ai/mcp-dev` + `esbuild` configured.
 
 Root commands affect all workspaces. Use `--workspace` flag for package-specific operations.
+
+**`.npmrc`:** `save-exact=true` — all dependencies installed with exact versions (no `^` or `~` ranges).
 
 ---
 
@@ -95,7 +97,7 @@ npm run typecheck --workspace=@mctx-ai/mcp-server  # tsc --noEmit
 
 ### Formatting
 
-- **Prettier 3** for `.js`, `.json`, `.md` files
+- **Prettier 3** for `.js`, `.json`, `.md` files (`printWidth: 100` in `.prettierrc.json`)
 - Run `npm run format` before committing
 
 ---
@@ -161,7 +163,15 @@ All commits MUST be signed off:
 git commit -s -m "feat(server): add URI template validation"
 ```
 
-This adds `Signed-off-by: Your Name <your.email@example.com>` to the commit message.
+This adds `Signed-off-by: Your Name <your.email@example.com>` to the commit message. DCO is enforced by convention and code review — there is no automated enforcement via GitHub App or commit hook.
+
+### Merge Strategy
+
+PRs are **squash merged**. The PR title becomes the commit subject and the PR description becomes the commit body. PR titles are validated by CI against Conventional Commits format (see CI/CD section).
+
+### Hooks and Automation
+
+No commit hooks (no husky, no lint-staged). All quality checks run in CI.
 
 ---
 
@@ -195,26 +205,75 @@ npx vitest run -t "validates URI templates correctly"
 
 ## Releases
 
-**Automated via Semantic Release** using `multi-semantic-release` for monorepo support.
+**Automated via `multi-semantic-release`** (specifically `@anolilab/multi-semantic-release`) for independent monorepo package releases.
 
-- Triggered by commits to `main` branch
-- Version bumps determined by commit type (feat → minor, fix/perf/revert → patch)
-- Changelog generated automatically
-- Packages released independently based on changes
+### Release Pipeline
+
+1. **Trigger:** Push to `main` branch
+2. **CI gate:** Build, lint, test, and smoke test all three packages must pass first
+3. **Release:** `multi-semantic-release` analyzes commits, bumps versions, publishes to npm, creates GitHub releases
+4. **Post-publish check:** Waits 30s then runs `npm install @mctx-ai/mcp-server@latest --dry-run` to verify npm propagation
+
+**Concurrency:** Only one release runs at a time (`concurrency: { group: release, cancel-in-progress: false }`).
+
+### Release Configuration
+
+Single `.releaserc.json` at root (no per-package configs). Plugin chain:
+
+1. `@semantic-release/commit-analyzer` — Determines version bump from commit type (preset: `conventionalcommits`)
+2. `@semantic-release/release-notes-generator` — Generates changelog (preset: `conventionalcommits`)
+3. `@semantic-release/npm` — Publishes to npm registry
+4. `@semantic-release/github` — Creates GitHub release with release notes
+
+**Release rules:** `feat` → minor, `fix`/`perf`/`revert` → patch. All other types (`docs`, `chore`, `ci`, `test`, `refactor`, `style`, `build`) do not trigger releases. `BREAKING CHANGE` in commit body or `!` suffix (e.g., `feat!:`) triggers a major release.
 
 No manual version bumps or changelog edits required.
 
-**Authentication:** npm publishing uses OIDC trusted publishing — no `NPM_TOKEN` secret. GitHub Actions proves its identity directly to npm via OpenID Connect. Trusted publishers are configured on npmjs.com for each package.
+### OIDC Trusted Publishing (npm)
+
+npm publishing uses **OIDC trusted publishing** — no `NPM_TOKEN` secret exists or is needed. The flow:
+
+1. Each package's `publishConfig` includes `"provenance": true`
+2. The release workflow job has `permissions: { id-token: write }` to request an OIDC token
+3. The workflow upgrades npm to `11.10.0` (which supports OIDC authentication)
+4. During `npm publish`, npm requests an OIDC token from GitHub Actions
+5. npm sends the token to the npm registry, which verifies the GitHub Actions identity
+6. The registry validates the token against the **trusted publisher configuration** on npmjs.com (configured per-package on the npmjs.com website — not in this repo)
+7. The package is published with a **provenance attestation** linking the published artifact to the specific GitHub Actions workflow run
+
+**What this means:** No secrets to rotate, no token to leak. Publishing is cryptographically tied to a specific GitHub repo + workflow + branch. The provenance attestation is publicly visible on npmjs.com for each published version.
 
 ---
 
 ## CI/CD
 
-**GitHub Actions workflows:**
+Five GitHub Actions workflows:
 
-- **Lint** — ESLint across all packages
-- **Test** — Matrix: Node 20.x/22.x × ubuntu/windows/macos
-- **Security Audit** — npm audit for vulnerabilities
-- **Scaffold Validation** — Tests `create-mctx-server` project generation
+### `ci.yml` — Continuous Integration
+
+Trigger: push/PR to `main`. Four jobs:
+
+1. **`lint`** — ESLint, Prettier format check, TypeScript type check (`tsc --noEmit`), workspace validation
+2. **`test`** — Matrix: Node `20.x`/`22.x` × ubuntu/windows/macos (fail-fast disabled). Coverage uploaded as artifact for Node 20.x/ubuntu (retained 7 days)
+3. **`security`** — `npm audit --audit-level=high` + license check (`license-checker`, fails on GPL/AGPL)
+4. **`scaffold`** — Builds packages, runs `create-mctx-server` to generate a test project, validates generated `package.json` fields
+
+### `release.yml` — Automated Release
+
+Trigger: push to `main`. See [Releases](#releases) section for full details. Three sequential jobs: ci-gate → release → post-publish-check.
+
+### `pr-title.yml` — PR Title Validation
+
+Trigger: PR opened/edited/synchronized/reopened to `main`. Validates PR title against Conventional Commits format using `amannn/action-semantic-pull-request`. Allowed types: `feat`, `fix`, `perf`, `revert`, `docs`, `chore`, `ci`, `test`, `refactor`, `style`, `build`. No length restriction.
+
+### `pr-comment.yml` — PR Bot Comment
+
+Trigger: PR opened. Posts squash merge workflow instructions (how commit types map to version bumps) using a GitHub App token (`MCTX_BOT_APP_ID` + `MCTX_BOT_PRIVATE_KEY` secrets).
+
+### `dependabot-auto-merge.yml` — Dependabot Auto-Merge
+
+Trigger: PR from `dependabot[bot]`. Auto-merges (squash) when: package ecosystem is `github_actions`, OR semver-patch updates, OR semver-minor direct:development updates.
+
+---
 
 All actions MUST be SHA-pinned (see GitHub Actions section above).
